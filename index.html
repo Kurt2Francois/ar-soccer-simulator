@@ -1,453 +1,452 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <title>AR Soccer</title>
+  <!DOCTYPE html>
+  <html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>AR Soccer</title>
 
-  <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-  <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+    <!--
+      jsDelivr CDN = globally cached, much faster than raw.githack or aframe.io directly.
+      aframe MUST load before ar.js.
+    -->
+    <script src="https://cdn.jsdelivr.net/npm/aframe@1.4.2/dist/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/ar.js@2.2.2/aframe/build/aframe-ar.min.js"></script>
 
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
 
-    html, body {
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-      background: #000;
-      font-family: Arial, sans-serif;
-      touch-action: none;
+      html, body {
+        width: 100%; height: 100%;
+        overflow: hidden;
+        background: #000;
+        font-family: Arial, sans-serif;
+        touch-action: none;
+      }
+
+      /* Force AR.js injected elements to fill screen */
+      a-scene, a-scene canvas, .a-canvas {
+        position: fixed !important;
+        top: 0 !important; left: 0 !important;
+        width: 100vw !important; height: 100vh !important;
+        z-index: 1 !important;
+      }
+      video {
+        position: fixed !important;
+        top: 0 !important; left: 0 !important;
+        width: 100vw !important; height: 100vh !important;
+        min-width: 100vw !important; min-height: 100vh !important;
+        max-width: 100vw !important; max-height: 100vh !important;
+        object-fit: cover !important;
+        z-index: 0 !important;
+        transform: none !important;
+      }
+      body > div:not(#ui):not(#score-board):not(#swipe-hint):not(#goal-flash):not(#miss-flash):not(#loading) {
+        position: fixed !important;
+        top: 0 !important; left: 0 !important;
+        width: 100vw !important; height: 100vh !important;
+        max-width: 100vw !important; max-height: 100vh !important;
+        overflow: hidden !important;
+      }
+
+      /* Loading screen */
+      #loading {
+        position: fixed; inset: 0; z-index: 9999;
+        background: #000;
+        display: flex; flex-direction: column;
+        justify-content: center; align-items: center;
+        gap: 16px; color: #fff;
+        transition: opacity 0.5s ease;
+      }
+      #loading.hidden { opacity: 0; pointer-events: none; }
+      #loading .ball {
+        font-size: 56px;
+        animation: ballSpin 0.9s linear infinite;
+        display: inline-block;
+      }
+      @keyframes ballSpin {
+        from { transform: rotate(0deg); }
+        to   { transform: rotate(360deg); }
+      }
+      #loading .title { font-size: 22px; font-weight: 700; letter-spacing: 1px; }
+      #loading .sub   { font-size: 13px; color: #888; }
+      .bar-wrap {
+        width: 200px; height: 5px;
+        background: #1a1a1a; border-radius: 99px; overflow: hidden;
+      }
+      .bar {
+        height: 100%; width: 0%;
+        background: linear-gradient(90deg, #2d8c2d, #ffe600);
+        border-radius: 99px;
+        transition: width 0.4s ease;
+      }
+
+      /* UI overlays */
+      #ui {
+        position: fixed; top: 14px; left: 14px; z-index: 999;
+        background: rgba(0,0,0,0.65); color: #fff;
+        padding: 8px 14px; border-radius: 99px; font-size: 13px;
+        pointer-events: none;
+      }
+      #score-board {
+        position: fixed; top: 14px; right: 14px; z-index: 999;
+        background: rgba(0,0,0,0.65); color: #fff;
+        padding: 8px 16px; border-radius: 99px;
+        font-size: 20px; font-weight: 700;
+        pointer-events: none;
+      }
+      #swipe-hint {
+        position: fixed; bottom: 40px; left: 50%;
+        transform: translateX(-50%); z-index: 999;
+        color: #fff; font-size: 17px; font-weight: 700;
+        text-align: center; display: none; pointer-events: none;
+        text-shadow: 0 2px 10px #000;
+        animation: bounce 1.4s ease-in-out infinite;
+      }
+      @keyframes bounce {
+        0%,100% { transform: translateX(-50%) translateY(0); }
+        50%      { transform: translateX(-50%) translateY(-9px); }
+      }
+      #trail-canvas {
+        position: fixed; inset: 0;
+        width: 100vw !important; height: 100vh !important;
+        z-index: 998; pointer-events: none;
+      }
+      #goal-flash {
+        position: fixed; inset: 0; z-index: 1000;
+        display: none; justify-content: center; align-items: center;
+        font-size: 80px; font-weight: 900; color: gold;
+        text-shadow: 0 0 40px orange; background: rgba(0,0,0,0.3);
+        pointer-events: none;
+      }
+      @keyframes flashIn {
+        0%   { opacity:0; transform:scale(0.4); }
+        30%  { opacity:1; transform:scale(1.2); }
+        65%  { opacity:1; transform:scale(1.0); }
+        100% { opacity:0; }
+      }
+      #miss-flash {
+        position: fixed; inset: 0; z-index: 1000;
+        display: none; justify-content: center; align-items: center;
+        font-size: 54px; font-weight: 900; color: #ff3333;
+        text-shadow: 0 0 24px red; background: rgba(0,0,0,0.15);
+        pointer-events: none;
+      }
+      @keyframes missIn {
+        0%   { opacity:0; transform:scale(0.7); }
+        30%  { opacity:1; }
+        70%  { opacity:1; }
+        100% { opacity:0; }
+      }
+      @keyframes scorePop {
+        0%   { transform:scale(1); }
+        40%  { transform:scale(1.5); color:#ffe600; }
+        100% { transform:scale(1); color:#fff; }
+      }
+      .score-pop { animation: scorePop 0.4s ease forwards; }
+    </style>
+  </head>
+  <body>
+
+  <div id="loading">
+    <div class="ball">⚽</div>
+    <div class="title">AR Soccer</div>
+    <div class="bar-wrap"><div class="bar" id="load-bar"></div></div>
+    <div class="sub" id="load-status">Loading scripts…</div>
+  </div>
+
+  <canvas id="trail-canvas"></canvas>
+  <div id="ui">📷 Find the Hiro marker</div>
+  <div id="score-board">⚽ <span id="score">0</span></div>
+  <div id="swipe-hint">👆 Swipe UP to kick!</div>
+  <div id="goal-flash">GOAL! 🎉</div>
+  <div id="miss-flash">Miss! 😬</div>
+
+  <a-scene
+    embedded
+    vr-mode-ui="enabled: false"
+    renderer="antialias: true; alpha: true;"
+    arjs="sourceType: webcam; debugUIEnabled: false; trackingMethod: best;"
+  >
+    <a-marker preset="hiro" id="hiro-marker">
+      <a-plane position="0 0 0" rotation="-90 0 0" width="4" height="6"
+        material="color:#2d8c2d; opacity:0.65; transparent:true"></a-plane>
+      <a-ring position="0 0.01 0" rotation="-90 0 0"
+        radius-inner="0.45" radius-outer="0.5"
+        material="color:white; opacity:0.55; transparent:true"></a-ring>
+      <a-cylinder position="-0.75 0.5 -2" radius="0.04" height="1" material="color:white"></a-cylinder>
+      <a-cylinder position=" 0.75 0.5 -2" radius="0.04" height="1" material="color:white"></a-cylinder>
+      <a-box position="0 0.98 -2" width="1.54" height="0.05" depth="0.05" material="color:white"></a-box>
+      <a-plane position="0 0.5 -2.08" width="1.5" height="1"
+        material="color:#ccc; opacity:0.22; transparent:true; side:double"></a-plane>
+      <a-box position="0 0.25 -2.08" width="1.5" height="0.01" depth="0.01" material="color:white;opacity:0.4;transparent:true"></a-box>
+      <a-box position="0 0.50 -2.08" width="1.5" height="0.01" depth="0.01" material="color:white;opacity:0.4;transparent:true"></a-box>
+      <a-box position="0 0.75 -2.08" width="1.5" height="0.01" depth="0.01" material="color:white;opacity:0.4;transparent:true"></a-box>
+      <a-box position="-0.5 0.5 -2.08" width="0.01" height="1" depth="0.01" material="color:white;opacity:0.4;transparent:true"></a-box>
+      <a-box position=" 0   0.5 -2.08" width="0.01" height="1" depth="0.01" material="color:white;opacity:0.4;transparent:true"></a-box>
+      <a-box position=" 0.5 0.5 -2.08" width="0.01" height="1" depth="0.01" material="color:white;opacity:0.4;transparent:true"></a-box>
+      <a-box position="0 0.01 -1.5" width="1.5" height="0.01" depth="0.01" material="color:white;opacity:0.5;transparent:true"></a-box>
+      <a-sphere id="soccer-ball" position="0 0.18 0.5" radius="0.18"
+        material="color:white; roughness:0.5">
+        <a-dodecahedron radius="0.185"
+          material="color:#111; wireframe:true; opacity:0.5; transparent:true"></a-dodecahedron>
+      </a-sphere>
+      <a-circle id="ball-shadow" position="0 0.005 0.5" rotation="-90 0 0"
+        radius="0.16" material="color:black; opacity:0.25; transparent:true"></a-circle>
+    </a-marker>
+
+    <a-entity camera fov="60" look-controls="enabled:false"></a-entity>
+  </a-scene>
+
+  <script>
+    // ── Loading progress ────────────────────────────────────────────────────
+    const loadingEl = document.getElementById('loading');
+    const loadBar   = document.getElementById('load-bar');
+    const loadStat  = document.getElementById('load-status');
+    const ui        = document.getElementById('ui');
+
+    function setProgress(pct, msg) {
+      loadBar.style.width = pct + '%';
+      loadStat.textContent = msg;
+    }
+    function hideLoader() {
+      loadingEl.classList.add('hidden');
+      setTimeout(() => { loadingEl.style.display = 'none'; }, 500);
     }
 
-    /* ── CRITICAL: Force EVERYTHING AR.js injects to fill the screen ── */
-
-    /* The a-scene wrapper */
-    a-scene,
-    a-scene canvas,
-    .a-canvas {
-      position: fixed !important;
-      top: 0 !important;
-      left: 0 !important;
-      width: 100vw !important;
-      height: 100vh !important;
-      z-index: 1 !important;
+    function showError(message) {
+      ui.textContent = message;
+      setProgress(100, 'Unable to start camera');
+      setTimeout(hideLoader, 2000);
     }
 
-    /*
-      AR.js creates a <video> AND wraps it in a <div> with inline width/height
-      styles based on camera resolution. We must override ALL of them.
-      object-fit:cover ensures it fills the viewport without stretching.
-    */
-    video {
-      position: fixed !important;
-      top: 0 !important;
-      left: 0 !important;
-      width: 100vw !important;
-      height: 100vh !important;
-      min-width: 100vw !important;
-      min-height: 100vh !important;
-      max-width: 100vw !important;
-      max-height: 100vh !important;
-      object-fit: cover !important;
-      z-index: 0 !important;
-      transform: none !important;
-    }
-
-    /* AR.js wraps the video in a div — nuke its inline sizing too */
-    body > div:not(#ui):not(#score-board):not(#swipe-hint):not(#goal-flash):not(#miss-flash) {
-      position: fixed !important;
-      top: 0 !important;
-      left: 0 !important;
-      width: 100vw !important;
-      height: 100vh !important;
-      max-width: 100vw !important;
-      max-height: 100vh !important;
-      overflow: hidden !important;
-    }
-
-    /* ── UI overlays ── */
-    #ui {
-      position: fixed;
-      top: 14px;
-      left: 14px;
-      z-index: 999;
-      background: rgba(0,0,0,0.65);
-      color: #fff;
-      padding: 8px 14px;
-      border-radius: 99px;
-      font-size: 13px;
-      pointer-events: none;
-    }
-
-    #score-board {
-      position: fixed;
-      top: 14px;
-      right: 14px;
-      z-index: 999;
-      background: rgba(0,0,0,0.65);
-      color: #fff;
-      padding: 8px 16px;
-      border-radius: 99px;
-      font-size: 20px;
-      font-weight: 700;
-      pointer-events: none;
-    }
-
-    #swipe-hint {
-      position: fixed;
-      bottom: 40px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 999;
-      color: #fff;
-      font-size: 17px;
-      font-weight: 700;
-      text-align: center;
-      display: none;
-      pointer-events: none;
-      text-shadow: 0 2px 10px #000;
-      animation: bounce 1.4s ease-in-out infinite;
-    }
-    @keyframes bounce {
-      0%,100% { transform: translateX(-50%) translateY(0); }
-      50%      { transform: translateX(-50%) translateY(-9px); }
-    }
-
-    #trail-canvas {
-      position: fixed;
-      inset: 0;
-      width: 100vw !important;
-      height: 100vh !important;
-      z-index: 998;
-      pointer-events: none;
-    }
-
-    #goal-flash {
-      position: fixed; inset: 0; z-index: 1000;
-      display: none; justify-content: center; align-items: center;
-      font-size: 80px; font-weight: 900; color: gold;
-      text-shadow: 0 0 40px orange; background: rgba(0,0,0,0.3);
-      pointer-events: none;
-    }
-    @keyframes flashIn {
-      0%   { opacity:0; transform:scale(0.4); }
-      30%  { opacity:1; transform:scale(1.2); }
-      65%  { opacity:1; transform:scale(1.0); }
-      100% { opacity:0; }
-    }
-
-    #miss-flash {
-      position: fixed; inset: 0; z-index: 1000;
-      display: none; justify-content: center; align-items: center;
-      font-size: 54px; font-weight: 900; color: #ff3333;
-      text-shadow: 0 0 24px red; background: rgba(0,0,0,0.15);
-      pointer-events: none;
-    }
-    @keyframes missIn {
-      0%   { opacity:0; transform:scale(0.7); }
-      30%  { opacity:1; }
-      70%  { opacity:1; }
-      100% { opacity:0; }
-    }
-
-    @keyframes scorePop {
-      0%   { transform:scale(1); }
-      40%  { transform:scale(1.5); color:#ffe600; }
-      100% { transform:scale(1); color:#fff; }
-    }
-    .score-pop { animation: scorePop 0.4s ease forwards; }
-  </style>
-</head>
-<body>
-
-<canvas id="trail-canvas"></canvas>
-<div id="ui">📷 Find the Hiro marker</div>
-<div id="score-board">⚽ <span id="score">0</span></div>
-<div id="swipe-hint">👆 Swipe UP to kick!</div>
-<div id="goal-flash">GOAL! 🎉</div>
-<div id="miss-flash">Miss! 😬</div>
-
-<a-scene
-  embedded
-  vr-mode-ui="enabled: false"
-  renderer="antialias: true; alpha: true;"
-  arjs="sourceType: webcam; debugUIEnabled: false; trackingMethod: best;"
->
-  <a-marker preset="hiro" id="hiro-marker">
-
-    <a-plane position="0 0 0" rotation="-90 0 0" width="4" height="6"
-      material="color:#2d8c2d; opacity:0.65; transparent:true"></a-plane>
-
-    <a-ring position="0 0.01 0" rotation="-90 0 0"
-      radius-inner="0.45" radius-outer="0.5"
-      material="color:white; opacity:0.55; transparent:true"></a-ring>
-
-    <a-cylinder position="-0.75 0.5 -2" radius="0.04" height="1" material="color:white"></a-cylinder>
-    <a-cylinder position=" 0.75 0.5 -2" radius="0.04" height="1" material="color:white"></a-cylinder>
-    <a-box position="0 0.98 -2" width="1.54" height="0.05" depth="0.05" material="color:white"></a-box>
-
-    <a-plane position="0 0.5 -2.08" width="1.5" height="1"
-      material="color:#ccc; opacity:0.22; transparent:true; side:double"></a-plane>
-    <a-box position="0 0.25 -2.08" width="1.5" height="0.01" depth="0.01" material="color:white;opacity:0.4;transparent:true"></a-box>
-    <a-box position="0 0.50 -2.08" width="1.5" height="0.01" depth="0.01" material="color:white;opacity:0.4;transparent:true"></a-box>
-    <a-box position="0 0.75 -2.08" width="1.5" height="0.01" depth="0.01" material="color:white;opacity:0.4;transparent:true"></a-box>
-    <a-box position="-0.5 0.5 -2.08" width="0.01" height="1" depth="0.01" material="color:white;opacity:0.4;transparent:true"></a-box>
-    <a-box position=" 0   0.5 -2.08" width="0.01" height="1" depth="0.01" material="color:white;opacity:0.4;transparent:true"></a-box>
-    <a-box position=" 0.5 0.5 -2.08" width="0.01" height="1" depth="0.01" material="color:white;opacity:0.4;transparent:true"></a-box>
-    <a-box position="0 0.01 -1.5" width="1.5" height="0.01" depth="0.01" material="color:white;opacity:0.5;transparent:true"></a-box>
-
-    <a-sphere id="soccer-ball" position="0 0.18 0.5" radius="0.18"
-      material="color:white; roughness:0.5">
-      <a-dodecahedron radius="0.185"
-        material="color:#111; wireframe:true; opacity:0.5; transparent:true"></a-dodecahedron>
-    </a-sphere>
-
-    <a-circle id="ball-shadow" position="0 0.005 0.5" rotation="-90 0 0"
-      radius="0.16" material="color:black; opacity:0.25; transparent:true"></a-circle>
-
-  </a-marker>
-
-  <a-entity camera fov="60" look-controls="enabled:false"></a-entity>
-</a-scene>
-
-<script>
-  // ── Aggressively nuke any inline sizing AR.js sets ──────────────────────
-  function forceFullscreen() {
-    const W = window.innerWidth;
-    const H = window.innerHeight;
-
-    // All videos
-    document.querySelectorAll('video').forEach(v => {
-      v.style.cssText += [
-        'position:fixed!important',
-        'top:0!important', 'left:0!important',
-        `width:${W}px!important`, `height:${H}px!important`,
-        'min-width:100vw!important', 'min-height:100vh!important',
-        'max-width:none!important', 'max-height:none!important',
-        'object-fit:cover!important',
-        'z-index:0!important',
-        'transform:none!important',
-      ].join(';');
-      v.setAttribute('playsinline', '');
-      v.setAttribute('webkit-playsinline', '');
-    });
-
-    // Any wrapper div AR.js creates (it gives them inline width/height)
-    document.querySelectorAll('body > div').forEach(el => {
-      if (['ui','score-board','swipe-hint','goal-flash','miss-flash'].includes(el.id)) return;
-      el.style.cssText += [
-        'position:fixed!important',
-        'top:0!important', 'left:0!important',
-        `width:${W}px!important`, `height:${H}px!important`,
-        'max-width:none!important', 'max-height:none!important',
-        'overflow:hidden!important',
-      ].join(';');
-    });
-
-    // WebGL canvas
-    document.querySelectorAll('canvas').forEach(c => {
-      if (c.id === 'trail-canvas') return;
-      c.style.cssText += [
-        'position:fixed!important',
-        'top:0!important', 'left:0!important',
-        `width:${W}px!important`, `height:${H}px!important`,
-        'z-index:1!important',
-      ].join(';');
-    });
-
-    // a-scene itself
+    setProgress(20, 'Checking camera support…');
     const scene = document.querySelector('a-scene');
-    if (scene) {
-      scene.style.cssText += [
-        'position:fixed!important',
-        'top:0!important', 'left:0!important',
-        `width:${W}px!important`, `height:${H}px!important`,
-      ].join(';');
+    let sceneReady = false;
+
+    function markReady() {
+      if (sceneReady) return;
+      sceneReady = true;
+      setProgress(100, 'Ready!');
+      setTimeout(hideLoader, 400);
     }
-  }
 
-  // Run immediately and keep running whenever DOM changes
-  forceFullscreen();
-  window.addEventListener('resize', forceFullscreen);
-  window.addEventListener('orientationchange', () => {
-    setTimeout(forceFullscreen, 100);
-    setTimeout(forceFullscreen, 500);
-  });
-
-  // Watch for AR.js injecting new elements / changing inline styles
-  new MutationObserver(forceFullscreen).observe(document.body, {
-    childList: true,
-    subtree: true,
-    attributes: true,
-    attributeFilter: ['style', 'width', 'height']
-  });
-
-  // ── Game state ──────────────────────────────────────────────────────────
-  let score = 0, ballInFlight = false, markerVisible = false;
-
-  const ui        = document.getElementById('ui');
-  const scoreEl   = document.getElementById('score');
-  const goalFlash = document.getElementById('goal-flash');
-  const missFlash = document.getElementById('miss-flash');
-  const swipeHint = document.getElementById('swipe-hint');
-  const ball      = document.getElementById('soccer-ball');
-  const shadow    = document.getElementById('ball-shadow');
-  const marker    = document.getElementById('hiro-marker');
-
-  marker.addEventListener('markerFound', () => {
-    markerVisible = true;
-    ui.textContent = '✅ Swipe UP to kick!';
-    swipeHint.style.display = 'block';
-  });
-  marker.addEventListener('markerLost', () => {
-    markerVisible = false;
-    ui.textContent = '📷 Find the Hiro marker';
-    swipeHint.style.display = 'none';
-  });
-
-  // ── Trail ───────────────────────────────────────────────────────────────
-  const trailCanvas = document.getElementById('trail-canvas');
-  const ctx = trailCanvas.getContext('2d');
-  let trailPoints = [];
-
-  function resizeTrail() {
-    trailCanvas.width  = window.innerWidth;
-    trailCanvas.height = window.innerHeight;
-  }
-  resizeTrail();
-  window.addEventListener('resize', resizeTrail);
-  window.addEventListener('orientationchange', () => setTimeout(resizeTrail, 200));
-
-  function drawTrail() {
-    ctx.clearRect(0, 0, trailCanvas.width, trailCanvas.height);
-    if (trailPoints.length < 2) return;
-    ctx.beginPath();
-    ctx.moveTo(trailPoints[0].x, trailPoints[0].y);
-    for (let i = 1; i < trailPoints.length; i++) ctx.lineTo(trailPoints[i].x, trailPoints[i].y);
-    ctx.strokeStyle = 'rgba(255,210,0,0.85)';
-    ctx.lineWidth = 7; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-    ctx.stroke();
-  }
-  function clearTrail() {
-    ctx.clearRect(0, 0, trailCanvas.width, trailCanvas.height);
-    trailPoints = [];
-  }
-
-  // ── Swipe (touch) ───────────────────────────────────────────────────────
-  let sx=0, sy=0, lx=0, ly=0, swiping=false;
-
-  document.addEventListener('touchstart', e => {
-    if (!markerVisible || ballInFlight) return;
-    const t = e.touches[0];
-    sx = lx = t.clientX; sy = ly = t.clientY;
-    swiping = true;
-    trailPoints = [{ x: t.clientX, y: t.clientY }];
-  }, { passive: true });
-
-  document.addEventListener('touchmove', e => {
-    if (!swiping) return;
-    const t = e.touches[0];
-    lx = t.clientX; ly = t.clientY;
-    trailPoints.push({ x: lx, y: ly });
-    drawTrail();
-  }, { passive: true });
-
-  document.addEventListener('touchend', () => {
-    if (!swiping || !markerVisible || ballInFlight) { swiping=false; clearTrail(); return; }
-    swiping = false;
-    const dx = lx - sx, dy = ly - sy;
-    const dist = Math.sqrt(dx*dx + dy*dy);
-    setTimeout(clearTrail, 250);
-    if (dist < 40 || dy > -40) return;
-    const xDrift = ((sx - window.innerWidth/2) / (window.innerWidth * 0.42)) * 0.75;
-    const power  = Math.min(dist / 280, 1.0);
-    kickBall(xDrift, power);
-  }, { passive: true });
-
-  // ── Mouse swipe support (PC) ────────────────────────────────────────────
-  let mDown = false;
-  document.addEventListener('mousedown', e => {
-    if (!markerVisible || ballInFlight) return;
-    sx = lx = e.clientX; sy = ly = e.clientY;
-    mDown = true;
-    trailPoints = [{ x: e.clientX, y: e.clientY }];
-  });
-  document.addEventListener('mousemove', e => {
-    if (!mDown) return;
-    lx = e.clientX; ly = e.clientY;
-    trailPoints.push({ x: lx, y: ly });
-    drawTrail();
-  });
-  document.addEventListener('mouseup', () => {
-    if (!mDown || !markerVisible || ballInFlight) { mDown=false; clearTrail(); return; }
-    mDown = false;
-    const dx = lx - sx, dy = ly - sy;
-    const dist = Math.sqrt(dx*dx + dy*dy);
-    setTimeout(clearTrail, 250);
-    if (dist < 40 || dy > -40) return;
-    const xDrift = ((sx - window.innerWidth/2) / (window.innerWidth * 0.42)) * 0.75;
-    const power  = Math.min(dist / 280, 1.0);
-    kickBall(xDrift, power);
-  });
-
-  // ── Kick animation ──────────────────────────────────────────────────────
-  function kickBall(xDrift, power) {
-    ballInFlight = true;
-    swipeHint.style.display = 'none';
-    const worldX = xDrift * 1.1;
-    const isGoal = Math.abs(worldX) < 0.70 && power > 0.18;
-    const sp = {x:0,           y:0.18,             z: 0.5};
-    const pp = {x:worldX*0.45, y:0.5+power*0.75,   z:-0.6};
-    const ep = {x:worldX,      y:isGoal?0.42:0.05, z:-2.3};
-    const dur = 700 + power*250, t0 = performance.now();
-
-    (function animate(now) {
-      const t  = Math.min((now-t0)/dur, 1);
-      const e2 = t<0.5 ? 2*t*t : -1+(4-2*t)*t, mt = 1-e2;
-      const x = mt*mt*sp.x+2*mt*e2*pp.x+e2*e2*ep.x;
-      const y = mt*mt*sp.y+2*mt*e2*pp.y+e2*e2*ep.y;
-      const z = mt*mt*sp.z+2*mt*e2*pp.z+e2*e2*ep.z;
-      ball.setAttribute('position', `${x.toFixed(3)} ${y.toFixed(3)} ${z.toFixed(3)}`);
-      const spin = e2*720;
-      ball.setAttribute('rotation', `${spin} ${(spin*0.3).toFixed(1)} 0`);
-      const ss = Math.max(0.15, 1-y*0.85);
-      shadow.setAttribute('position', `${x.toFixed(3)} 0.005 ${z.toFixed(3)}`);
-      shadow.setAttribute('scale', `${ss} ${ss} 1`);
-      t < 1 ? requestAnimationFrame(animate) : onLanded(isGoal);
-    })(performance.now());
-  }
-
-  function onLanded(isGoal) {
-    if (isGoal) {
-      score++;
-      scoreEl.textContent = score;
-      scoreEl.classList.remove('score-pop');
-      void scoreEl.offsetWidth;
-      scoreEl.classList.add('score-pop');
-      showFlash(goalFlash, 'flashIn', 1800);
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      showError('Camera unavailable on this browser. Use Chrome/Edge on HTTPS or localhost.');
     } else {
-      showFlash(missFlash, 'missIn', 1100);
-    }
-    setTimeout(() => {
-      ball.setAttribute('position', '0 0.18 0.5');
-      ball.setAttribute('rotation', '0 0 0');
-      shadow.setAttribute('position', '0 0.005 0.5');
-      shadow.setAttribute('scale', '1 1 1');
-      ballInFlight = false;
-      if (markerVisible) swipeHint.style.display = 'block';
-    }, isGoal ? 2000 : 900);
-  }
+      scene.addEventListener('loaded', () => setProgress(60, 'Starting camera…'));
+      scene.addEventListener('renderstart', markReady);
+      scene.addEventListener('camera-ready', markReady);
+      scene.addEventListener('arjs-video-loaded', markReady);
+      scene.addEventListener('arjs-video-error', () => showError('Camera access denied or blocked.'));
+      scene.addEventListener('error', () => showError('AR initialization failed.'));
 
-  function showFlash(el, anim, ms) {
-    el.style.display = 'flex';
-    el.style.animation = 'none';
-    void el.offsetWidth;
-    el.style.animation = `${anim} ${ms}ms ease forwards`;
-    setTimeout(() => { el.style.display = 'none'; }, ms);
-  }
-</script>
-</body>
-</html>
+      // Fallback: hide after 12s max to avoid hanging loader.
+      setTimeout(() => {
+        if (!sceneReady) {
+          showError('Still loading? Check camera permissions or secure context.');
+        }
+      }, 12000);
+    }
+
+    // ── Force fullscreen on everything AR.js injects ────────────────────────
+    function forceFullscreen() {
+      const W = window.innerWidth, H = window.innerHeight;
+      const base = `position:fixed!important;top:0!important;left:0!important;width:${W}px!important;height:${H}px!important;max-width:none!important;max-height:none!important`;
+
+      document.querySelectorAll('video').forEach(v => {
+        v.style.cssText += ';' + base + ';min-width:100vw!important;min-height:100vh!important;object-fit:cover!important;z-index:0!important;transform:none!important;';
+        v.setAttribute('playsinline', '');
+        v.setAttribute('webkit-playsinline', '');
+      });
+      document.querySelectorAll('body > div').forEach(el => {
+        if (['ui','score-board','swipe-hint','goal-flash','miss-flash','loading'].includes(el.id)) return;
+        el.style.cssText += ';' + base + ';overflow:hidden!important;';
+      });
+      document.querySelectorAll('canvas').forEach(c => {
+        if (c.id === 'trail-canvas') return;
+        c.style.cssText += ';' + base + ';z-index:1!important;';
+      });
+      scene.style.cssText += ';' + base;
+    }
+
+    forceFullscreen();
+    window.addEventListener('resize', forceFullscreen);
+    window.addEventListener('orientationchange', () => {
+      setTimeout(forceFullscreen, 100);
+      setTimeout(forceFullscreen, 500);
+    });
+    new MutationObserver(forceFullscreen).observe(document.body, {
+      childList: true, subtree: true,
+      attributes: true, attributeFilter: ['style','width','height']
+    });
+
+    // ── Game state ──────────────────────────────────────────────────────────
+    let score = 0, ballInFlight = false, markerVisible = false;
+
+    const ui        = document.getElementById('ui');
+    const scoreEl   = document.getElementById('score');
+    const goalFlash = document.getElementById('goal-flash');
+    const missFlash = document.getElementById('miss-flash');
+    const swipeHint = document.getElementById('swipe-hint');
+    const ball      = document.getElementById('soccer-ball');
+    const shadow    = document.getElementById('ball-shadow');
+    const marker    = document.getElementById('hiro-marker');
+
+    marker.addEventListener('markerFound', () => {
+      markerVisible = true;
+      ui.textContent = '✅ Swipe UP to kick!';
+      swipeHint.style.display = 'block';
+    });
+    marker.addEventListener('markerLost', () => {
+      markerVisible = false;
+      ui.textContent = '📷 Find the Hiro marker';
+      swipeHint.style.display = 'none';
+    });
+
+    // ── Trail ───────────────────────────────────────────────────────────────
+    const trailCanvas = document.getElementById('trail-canvas');
+    const ctx = trailCanvas.getContext('2d');
+    let trailPoints = [];
+
+    function resizeTrail() {
+      trailCanvas.width  = window.innerWidth;
+      trailCanvas.height = window.innerHeight;
+    }
+    resizeTrail();
+    window.addEventListener('resize', resizeTrail);
+    window.addEventListener('orientationchange', () => setTimeout(resizeTrail, 200));
+
+    function drawTrail() {
+      ctx.clearRect(0, 0, trailCanvas.width, trailCanvas.height);
+      if (trailPoints.length < 2) return;
+      ctx.beginPath();
+      ctx.moveTo(trailPoints[0].x, trailPoints[0].y);
+      for (let i = 1; i < trailPoints.length; i++) ctx.lineTo(trailPoints[i].x, trailPoints[i].y);
+      ctx.strokeStyle = 'rgba(255,210,0,0.85)';
+      ctx.lineWidth = 7; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      ctx.stroke();
+    }
+    function clearTrail() {
+      ctx.clearRect(0, 0, trailCanvas.width, trailCanvas.height);
+      trailPoints = [];
+    }
+
+    // ── Touch swipe ─────────────────────────────────────────────────────────
+    let sx=0, sy=0, lx=0, ly=0, swiping=false;
+
+    document.addEventListener('touchstart', e => {
+      if (!markerVisible || ballInFlight) return;
+      const t = e.touches[0];
+      sx = lx = t.clientX; sy = ly = t.clientY;
+      swiping = true;
+      trailPoints = [{ x: t.clientX, y: t.clientY }];
+    }, { passive: true });
+
+    document.addEventListener('touchmove', e => {
+      if (!swiping) return;
+      const t = e.touches[0];
+      lx = t.clientX; ly = t.clientY;
+      trailPoints.push({ x: lx, y: ly });
+      drawTrail();
+    }, { passive: true });
+
+    document.addEventListener('touchend', () => {
+      if (!swiping || !markerVisible || ballInFlight) { swiping=false; clearTrail(); return; }
+      swiping = false;
+      const dx = lx-sx, dy = ly-sy;
+      const dist = Math.sqrt(dx*dx+dy*dy);
+      setTimeout(clearTrail, 250);
+      if (dist < 40 || dy > -40) return;
+      kickBall(
+        ((sx - window.innerWidth/2) / (window.innerWidth*0.42)) * 0.75,
+        Math.min(dist/280, 1.0)
+      );
+    }, { passive: true });
+
+    // ── Mouse swipe (PC) ────────────────────────────────────────────────────
+    let mDown = false;
+    document.addEventListener('mousedown', e => {
+      if (!markerVisible || ballInFlight) return;
+      sx = lx = e.clientX; sy = ly = e.clientY;
+      mDown = true;
+      trailPoints = [{ x: e.clientX, y: e.clientY }];
+    });
+    document.addEventListener('mousemove', e => {
+      if (!mDown) return;
+      lx = e.clientX; ly = e.clientY;
+      trailPoints.push({ x: lx, y: ly });
+      drawTrail();
+    });
+    document.addEventListener('mouseup', () => {
+      if (!mDown || !markerVisible || ballInFlight) { mDown=false; clearTrail(); return; }
+      mDown = false;
+      const dx = lx-sx, dy = ly-sy;
+      const dist = Math.sqrt(dx*dx+dy*dy);
+      setTimeout(clearTrail, 250);
+      if (dist < 40 || dy > -40) return;
+      kickBall(
+        ((sx - window.innerWidth/2) / (window.innerWidth*0.42)) * 0.75,
+        Math.min(dist/280, 1.0)
+      );
+    });
+
+    // ── Kick animation ──────────────────────────────────────────────────────
+    function kickBall(xDrift, power) {
+      ballInFlight = true;
+      swipeHint.style.display = 'none';
+      const worldX = xDrift * 1.1;
+      const isGoal = Math.abs(worldX) < 0.70 && power > 0.18;
+      const sp = {x:0,           y:0.18,             z: 0.5};
+      const pp = {x:worldX*0.45, y:0.5+power*0.75,   z:-0.6};
+      const ep = {x:worldX,      y:isGoal?0.42:0.05, z:-2.3};
+      const dur = 700 + power*250, t0 = performance.now();
+
+      (function animate(now) {
+        const t  = Math.min((now-t0)/dur, 1);
+        const e2 = t<0.5 ? 2*t*t : -1+(4-2*t)*t, mt = 1-e2;
+        const x = mt*mt*sp.x+2*mt*e2*pp.x+e2*e2*ep.x;
+        const y = mt*mt*sp.y+2*mt*e2*pp.y+e2*e2*ep.y;
+        const z = mt*mt*sp.z+2*mt*e2*pp.z+e2*e2*ep.z;
+        ball.setAttribute('position', `${x.toFixed(3)} ${y.toFixed(3)} ${z.toFixed(3)}`);
+        const spin = e2*720;
+        ball.setAttribute('rotation', `${spin} ${(spin*0.3).toFixed(1)} 0`);
+        const ss = Math.max(0.15, 1-y*0.85);
+        shadow.setAttribute('position', `${x.toFixed(3)} 0.005 ${z.toFixed(3)}`);
+        shadow.setAttribute('scale', `${ss} ${ss} 1`);
+        t < 1 ? requestAnimationFrame(animate) : onLanded(isGoal);
+      })(performance.now());
+    }
+
+    function onLanded(isGoal) {
+      if (isGoal) {
+        score++;
+        scoreEl.textContent = score;
+        scoreEl.classList.remove('score-pop');
+        void scoreEl.offsetWidth;
+        scoreEl.classList.add('score-pop');
+        showFlash(goalFlash, 'flashIn', 1800);
+      } else {
+        showFlash(missFlash, 'missIn', 1100);
+      }
+      setTimeout(() => {
+        ball.setAttribute('position', '0 0.18 0.5');
+        ball.setAttribute('rotation', '0 0 0');
+        shadow.setAttribute('position', '0 0.005 0.5');
+        shadow.setAttribute('scale', '1 1 1');
+        ballInFlight = false;
+        if (markerVisible) swipeHint.style.display = 'block';
+      }, isGoal ? 2000 : 900);
+    }
+
+    function showFlash(el, anim, ms) {
+      el.style.display = 'flex';
+      el.style.animation = 'none';
+      void el.offsetWidth;
+      el.style.animation = `${anim} ${ms}ms ease forwards`;
+      setTimeout(() => { el.style.display = 'none'; }, ms);
+    }
+  </script>
+  </body>
+  </html>
