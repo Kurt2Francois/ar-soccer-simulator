@@ -2,65 +2,95 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>AR Soccer</title>
 
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
 
   <style>
-    * { box-sizing: border-box; }
-    body { margin: 0; overflow: hidden; font-family: Arial, sans-serif; touch-action: none; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
-    #ui {
-      position: fixed;
-      top: 12px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 999;
-      background: rgba(0,0,0,0.75);
-      color: white;
-      padding: 10px 20px;
-      border-radius: 20px;
-      font-size: 14px;
-      pointer-events: none;
-      white-space: nowrap;
+    html, body {
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background: #000;
+      font-family: Arial, sans-serif;
+      touch-action: none;
+    }
+
+    a-scene, .a-canvas, canvas.a-canvas {
+      position: fixed !important;
+      top: 0 !important; left: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+    }
+
+    /* Let AR.js video fill screen naturally — no scaling */
+    video {
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      object-fit: cover !important;
+      z-index: -1 !important;
+      transform: none !important;
     }
 
     #score-board {
       position: fixed;
-      top: 60px;
-      left: 50%;
-      transform: translateX(-50%);
+      top: max(14px, env(safe-area-inset-top, 14px));
+      right: 16px;
       z-index: 999;
-      background: rgba(0,100,0,0.85);
-      color: white;
-      padding: 8px 24px;
-      border-radius: 16px;
-      font-size: 18px;
-      font-weight: bold;
-      display: none;
-      text-align: center;
+      background: rgba(0,0,0,0.65);
+      color: #fff;
+      padding: 8px 18px;
+      border-radius: 99px;
+      font-size: 20px;
+      font-weight: 700;
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    #ui {
+      position: fixed;
+      top: max(14px, env(safe-area-inset-top, 14px));
+      left: 16px;
+      z-index: 999;
+      background: rgba(0,0,0,0.65);
+      color: #fff;
+      padding: 8px 14px;
+      border-radius: 99px;
+      font-size: 13px;
+      pointer-events: none;
+      white-space: nowrap;
     }
 
     #swipe-hint {
       position: fixed;
-      bottom: 36px;
+      bottom: max(32px, env(safe-area-inset-bottom, 32px));
       left: 50%;
       transform: translateX(-50%);
       z-index: 999;
-      color: rgba(255,255,255,0.9);
-      font-size: 16px;
-      font-weight: bold;
+      color: rgba(255,255,255,0.92);
+      font-size: 17px;
+      font-weight: 700;
       text-align: center;
       display: none;
       pointer-events: none;
-      text-shadow: 0 2px 8px rgba(0,0,0,0.9);
-      animation: bounce 1.4s infinite;
+      text-shadow: 0 2px 10px rgba(0,0,0,1);
+      animation: bounce 1.4s ease-in-out infinite;
     }
     @keyframes bounce {
       0%,100% { transform: translateX(-50%) translateY(0); }
-      50%      { transform: translateX(-50%) translateY(-8px); }
+      50%      { transform: translateX(-50%) translateY(-9px); }
     }
 
     #trail-canvas {
@@ -70,6 +100,13 @@
       pointer-events: none;
     }
 
+    @keyframes scorePop {
+      0%   { transform: scale(1); }
+      40%  { transform: scale(1.45); color: #ffe600; }
+      100% { transform: scale(1); color: #fff; }
+    }
+    .score-pop { animation: scorePop 0.45s ease forwards; }
+
     #goal-flash {
       position: fixed;
       inset: 0;
@@ -77,18 +114,18 @@
       display: none;
       justify-content: center;
       align-items: center;
-      font-size: 72px;
+      font-size: 80px;
       font-weight: 900;
       color: gold;
-      text-shadow: 0 0 40px orange, 0 0 80px red;
-      background: rgba(0,0,0,0.35);
+      text-shadow: 0 0 40px orange, 0 0 90px red;
+      background: rgba(0,0,0,0.3);
       pointer-events: none;
     }
     @keyframes flashIn {
-      0%   { opacity: 0; transform: scale(0.5); }
-      30%  { opacity: 1; transform: scale(1.15); }
-      70%  { opacity: 1; transform: scale(1.0); }
-      100% { opacity: 0; transform: scale(1.2); }
+      0%   { opacity:0; transform:scale(0.4); }
+      30%  { opacity:1; transform:scale(1.2); }
+      65%  { opacity:1; transform:scale(1.0); }
+      100% { opacity:0; transform:scale(1.1); }
     }
 
     #miss-flash {
@@ -98,56 +135,51 @@
       display: none;
       justify-content: center;
       align-items: center;
-      font-size: 52px;
+      font-size: 54px;
       font-weight: 900;
-      color: #ff4444;
-      text-shadow: 0 0 20px red;
-      background: rgba(0,0,0,0.2);
+      color: #ff3333;
+      text-shadow: 0 0 24px red;
+      background: rgba(0,0,0,0.18);
       pointer-events: none;
     }
     @keyframes missIn {
-      0%   { opacity: 0; transform: scale(0.7); }
-      30%  { opacity: 1; transform: scale(1.05); }
-      70%  { opacity: 1; }
-      100% { opacity: 0; }
+      0%   { opacity:0; transform:scale(0.7); }
+      30%  { opacity:1; transform:scale(1.05); }
+      70%  { opacity:1; }
+      100% { opacity:0; }
     }
   </style>
 </head>
-
 <body>
 
 <canvas id="trail-canvas"></canvas>
-<div id="ui">📷 Point camera at Hiro marker</div>
-<div id="score-board">⚽ Goals: <span id="score">0</span></div>
+<div id="ui">📷 Find the Hiro marker</div>
+<div id="score-board">⚽ <span id="score">0</span></div>
 <div id="swipe-hint">👆 Swipe UP to kick!</div>
-<div id="goal-flash">⚽ GOAL! 🎉</div>
-<div id="miss-flash">😬 Miss!</div>
+<div id="goal-flash">GOAL! 🎉</div>
+<div id="miss-flash">Miss! 😬</div>
 
 <a-scene
   embedded
   vr-mode-ui="enabled: false"
-  renderer="antialias: true; alpha: true"
-  arjs="sourceType: webcam; debugUIEnabled: false;"
+  renderer="antialias: true; alpha: true; logarithmicDepthBuffer: true;"
+  arjs="sourceType: webcam; debugUIEnabled: false; trackingMethod: best; sourceWidth: 640; sourceHeight: 480; displayWidth: 640; displayHeight: 480;"
 >
   <a-marker preset="hiro" id="hiro-marker">
 
-    <!-- Grass -->
     <a-plane position="0 0 0" rotation="-90 0 0" width="4" height="6"
-      material="color: #2d8c2d; opacity: 0.65; transparent: true"></a-plane>
+      material="color:#2d8c2d; opacity:0.65; transparent:true"></a-plane>
 
-    <!-- Center circle -->
     <a-ring position="0 0.01 0" rotation="-90 0 0"
       radius-inner="0.45" radius-outer="0.5"
-      material="color: white; opacity: 0.55; transparent: true"></a-ring>
+      material="color:white; opacity:0.55; transparent:true"></a-ring>
 
-    <!-- Goal posts -->
-    <a-cylinder position="-0.75 0.5 -2" radius="0.04" height="1" material="color: white"></a-cylinder>
-    <a-cylinder position=" 0.75 0.5 -2" radius="0.04" height="1" material="color: white"></a-cylinder>
-    <a-box position="0 0.98 -2" width="1.54" height="0.05" depth="0.05" material="color: white"></a-box>
+    <a-cylinder position="-0.75 0.5 -2" radius="0.04" height="1" material="color:white"></a-cylinder>
+    <a-cylinder position=" 0.75 0.5 -2" radius="0.04" height="1" material="color:white"></a-cylinder>
+    <a-box position="0 0.98 -2" width="1.54" height="0.05" depth="0.05" material="color:white"></a-box>
 
-    <!-- Net -->
     <a-plane position="0 0.5 -2.08" width="1.5" height="1"
-      material="color: #cccccc; opacity: 0.22; transparent: true; side: double"></a-plane>
+      material="color:#cccccc; opacity:0.22; transparent:true; side:double"></a-plane>
     <a-box position="0 0.25 -2.08" width="1.5" height="0.01" depth="0.01" material="color:white;opacity:0.4;transparent:true"></a-box>
     <a-box position="0 0.50 -2.08" width="1.5" height="0.01" depth="0.01" material="color:white;opacity:0.4;transparent:true"></a-box>
     <a-box position="0 0.75 -2.08" width="1.5" height="0.01" depth="0.01" material="color:white;opacity:0.4;transparent:true"></a-box>
@@ -156,175 +188,200 @@
     <a-box position=" 0.5 0.5 -2.08" width="0.01" height="1" depth="0.01" material="color:white;opacity:0.4;transparent:true"></a-box>
     <a-box position="0 0.01 -1.5" width="1.5" height="0.01" depth="0.01" material="color:white;opacity:0.5;transparent:true"></a-box>
 
-    <!-- Soccer ball -->
     <a-sphere id="soccer-ball" position="0 0.18 0.5" radius="0.18"
-      material="color: white; roughness: 0.5" shadow>
+      material="color:white; roughness:0.5" shadow>
       <a-dodecahedron position="0 0 0" radius="0.185"
-        material="color: #111; wireframe: true; opacity: 0.5; transparent:true"></a-dodecahedron>
+        material="color:#111; wireframe:true; opacity:0.5; transparent:true"></a-dodecahedron>
     </a-sphere>
 
-    <!-- Ball shadow -->
     <a-circle id="ball-shadow" position="0 0.005 0.5" rotation="-90 0 0"
-      radius="0.16" material="color: black; opacity: 0.25; transparent: true"></a-circle>
+      radius="0.16" material="color:black; opacity:0.25; transparent:true"></a-circle>
 
   </a-marker>
 
-  <a-entity camera></a-entity>
+  <!-- FOV 60 matches a real phone rear camera closely -->
+  <a-entity camera fov="60" look-controls="enabled: false"></a-entity>
 </a-scene>
 
 <script>
-  let score = 0;
-  let ballInFlight = false;
-  let markerVisible = false;
+  // ── Override getUserMedia BEFORE AR.js calls it ──────────────────────────
+  // Force the rear camera at a wide, low-zoom resolution (640x480 landscape)
+  // so AR.js gets a zoomed-out view instead of cropping into the sensor.
+  (function () {
+    const _getUserMedia = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
+    navigator.mediaDevices.getUserMedia = function (constraints) {
+      // Only override video constraints
+      if (constraints && constraints.video) {
+        constraints.video = {
+          facingMode: { exact: 'environment' },
+          width:  { ideal: 640 },
+          height: { ideal: 480 },
+          // Ask for the widest zoom the device supports
+          zoom: 1,
+          focusMode: 'continuous'
+        };
+      }
+      return _getUserMedia(constraints);
+    };
+  })();
 
-  const ui         = document.getElementById('ui');
-  const scoreBoard = document.getElementById('score-board');
-  const scoreEl    = document.getElementById('score');
-  const goalFlash  = document.getElementById('goal-flash');
-  const missFlash  = document.getElementById('miss-flash');
-  const swipeHint  = document.getElementById('swipe-hint');
-  const ball       = document.getElementById('soccer-ball');
-  const shadow     = document.getElementById('ball-shadow');
-  const marker     = document.getElementById('hiro-marker');
+  // ── After scene loads, apply zoom:1 on the track if supported ───────────
+  document.querySelector('a-scene').addEventListener('loaded', () => {
+    setTimeout(() => {
+      const video = document.querySelector('video');
+      if (!video) return;
 
-  // ── Marker ────────────────────────────────────────────
+      // Force fill screen
+      function fixVideo() {
+        video.style.cssText = `
+          position:fixed!important;
+          top:0!important; left:0!important;
+          width:100vw!important; height:100vh!important;
+          object-fit:cover!important;
+          z-index:-1!important;
+          transform:none!important;
+        `;
+      }
+      fixVideo();
+      new MutationObserver(fixVideo).observe(video, { attributes: true });
+
+      // Try to apply zoom:1 via track constraints (Android Chrome supports this)
+      const stream = video.srcObject;
+      if (stream) {
+        const track = stream.getVideoTracks()[0];
+        if (track) {
+          const caps = track.getCapabilities ? track.getCapabilities() : {};
+          const settings = { advanced: [] };
+          if (caps.zoom) settings.advanced.push({ zoom: caps.zoom.min });
+          if (Object.keys(settings.advanced).length) {
+            track.applyConstraints(settings).catch(() => {});
+          }
+        }
+      }
+    }, 1500);
+  });
+
+  // ── Fix all canvases ─────────────────────────────────────────────────────
+  function fixCanvases() {
+    document.querySelectorAll('canvas').forEach(c => {
+      if (c.id === 'trail-canvas') return;
+      c.style.cssText = `position:fixed!important;top:0!important;left:0!important;width:100vw!important;height:100vh!important;`;
+    });
+  }
+  fixCanvases();
+  window.addEventListener('resize', fixCanvases);
+  new MutationObserver(fixCanvases).observe(document.body, { childList: true, subtree: true });
+
+  // ── Game state ────────────────────────────────────────────────────────────
+  let score = 0, ballInFlight = false, markerVisible = false;
+
+  const ui        = document.getElementById('ui');
+  const scoreEl   = document.getElementById('score');
+  const goalFlash = document.getElementById('goal-flash');
+  const missFlash = document.getElementById('miss-flash');
+  const swipeHint = document.getElementById('swipe-hint');
+  const ball      = document.getElementById('soccer-ball');
+  const shadow    = document.getElementById('ball-shadow');
+  const marker    = document.getElementById('hiro-marker');
+
   marker.addEventListener('markerFound', () => {
     markerVisible = true;
-    ui.textContent = '✅ Swipe UP anywhere to kick!';
+    ui.textContent = '✅ Swipe UP to kick!';
     swipeHint.style.display = 'block';
-    scoreBoard.style.display = 'block';
   });
   marker.addEventListener('markerLost', () => {
     markerVisible = false;
-    ui.textContent = '📷 Point camera at Hiro marker';
+    ui.textContent = '📷 Find the Hiro marker';
     swipeHint.style.display = 'none';
   });
 
-  // ── Trail canvas ──────────────────────────────────────
-  const canvas = document.getElementById('trail-canvas');
-  const ctx    = canvas.getContext('2d');
-
-  function resizeCanvas() {
-    canvas.width  = window.innerWidth;
-    canvas.height = window.innerHeight;
-  }
-  resizeCanvas();
-  window.addEventListener('resize', resizeCanvas);
-
+  // ── Trail canvas ──────────────────────────────────────────────────────────
+  const trailCanvas = document.getElementById('trail-canvas');
+  const ctx = trailCanvas.getContext('2d');
   let trailPoints = [];
 
+  function resizeTrail() {
+    trailCanvas.width  = window.innerWidth;
+    trailCanvas.height = window.innerHeight;
+  }
+  resizeTrail();
+  window.addEventListener('resize', resizeTrail);
+
   function drawTrail() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0, 0, trailCanvas.width, trailCanvas.height);
     if (trailPoints.length < 2) return;
     ctx.beginPath();
     ctx.moveTo(trailPoints[0].x, trailPoints[0].y);
-    for (let i = 1; i < trailPoints.length; i++) {
-      ctx.lineTo(trailPoints[i].x, trailPoints[i].y);
-    }
-    ctx.strokeStyle = 'rgba(255, 200, 0, 0.75)';
-    ctx.lineWidth   = 7;
-    ctx.lineCap     = 'round';
-    ctx.lineJoin    = 'round';
+    for (let i = 1; i < trailPoints.length; i++) ctx.lineTo(trailPoints[i].x, trailPoints[i].y);
+    ctx.strokeStyle = 'rgba(255,210,0,0.8)';
+    ctx.lineWidth = 7; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
     ctx.stroke();
   }
-
   function clearTrail() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0, 0, trailCanvas.width, trailCanvas.height);
     trailPoints = [];
   }
 
-  // ── Touch ─────────────────────────────────────────────
-  let touchStartX = 0, touchStartY = 0;
-  let touchLastX  = 0, touchLastY  = 0;
-  let isSwiping   = false;
+  // ── Touch ─────────────────────────────────────────────────────────────────
+  let touchStartX=0, touchStartY=0, touchLastX=0, touchLastY=0, isSwiping=false;
 
-  document.addEventListener('touchstart', (e) => {
+  document.addEventListener('touchstart', e => {
     if (!markerVisible || ballInFlight) return;
     const t = e.touches[0];
     touchStartX = touchLastX = t.clientX;
     touchStartY = touchLastY = t.clientY;
-    isSwiping   = true;
+    isSwiping = true;
     trailPoints = [{ x: t.clientX, y: t.clientY }];
   }, { passive: true });
 
-  document.addEventListener('touchmove', (e) => {
+  document.addEventListener('touchmove', e => {
     if (!isSwiping) return;
     const t = e.touches[0];
-    touchLastX = t.clientX;
-    touchLastY = t.clientY;
+    touchLastX = t.clientX; touchLastY = t.clientY;
     trailPoints.push({ x: t.clientX, y: t.clientY });
     drawTrail();
   }, { passive: true });
 
   document.addEventListener('touchend', () => {
-    if (!isSwiping || !markerVisible || ballInFlight) {
-      isSwiping = false;
-      clearTrail();
-      return;
-    }
+    if (!isSwiping || !markerVisible || ballInFlight) { isSwiping=false; clearTrail(); return; }
     isSwiping = false;
-
     const dx = touchLastX - touchStartX;
-    const dy = touchLastY - touchStartY; // negative = upward swipe
-
-    const swipeDist = Math.sqrt(dx * dx + dy * dy);
-    const isUpward  = dy < -40;
-
+    const dy = touchLastY - touchStartY;
+    const dist = Math.sqrt(dx*dx + dy*dy);
     setTimeout(clearTrail, 250);
-
-    if (swipeDist < 40 || !isUpward) return; // ignored: too short or not upward
-
-    // Horizontal aim: where on screen the swipe started
-    const screenW  = window.innerWidth;
-    const centerX  = screenW / 2;
-    const offsetX  = touchStartX - centerX;             // px from center
-    const xDrift   = (offsetX / (screenW * 0.42)) * 0.75; // normalise → ±0.75
-
-    // Power from swipe length, capped at 1
-    const power = Math.min(swipeDist / 280, 1.0);
-
+    if (dist < 40 || dy > -40) return;
+    const xDrift = ((touchStartX - window.innerWidth/2) / (window.innerWidth*0.42)) * 0.75;
+    const power  = Math.min(dist / 280, 1.0);
     kickBall(xDrift, power);
   }, { passive: true });
 
-  // ── Kick ─────────────────────────────────────────────
+  // ── Kick ──────────────────────────────────────────────────────────────────
   function kickBall(xDrift, power) {
     if (ballInFlight) return;
     ballInFlight = true;
     swipeHint.style.display = 'none';
-
-    // Goal posts sit at x ±0.75 world units
     const worldX = xDrift * 1.1;
-    const isGoal  = Math.abs(worldX) < 0.70 && power > 0.18;
-
-    const startPos = { x: 0,             y: 0.18,                z:  0.5 };
-    const peakPos  = { x: worldX * 0.45, y: 0.5 + power * 0.75, z: -0.6 };
-    const endPos   = { x: worldX,        y: isGoal ? 0.42 : 0.05, z: -2.3 };
-
-    const duration  = 700 + power * 250;
-    const startTime = performance.now();
+    const isGoal = Math.abs(worldX) < 0.70 && power > 0.18;
+    const sp = { x:0,           y:0.18,              z: 0.5  };
+    const pp = { x:worldX*0.45, y:0.5+power*0.75,    z:-0.6  };
+    const ep = { x:worldX,      y:isGoal?0.42:0.05,  z:-2.3  };
+    const dur = 700 + power*250;
+    const t0  = performance.now();
 
     function animate(now) {
-      const t  = Math.min((now - startTime) / duration, 1);
-      const e2 = t < 0.5 ? 2*t*t : -1 + (4 - 2*t)*t; // ease in-out quad
-      const mt = 1 - e2;
-
-      const x = mt*mt*startPos.x + 2*mt*e2*peakPos.x + e2*e2*endPos.x;
-      const y = mt*mt*startPos.y + 2*mt*e2*peakPos.y + e2*e2*endPos.y;
-      const z = mt*mt*startPos.z + 2*mt*e2*peakPos.z + e2*e2*endPos.z;
-
+      const t  = Math.min((now-t0)/dur, 1);
+      const e2 = t<0.5 ? 2*t*t : -1+(4-2*t)*t;
+      const mt = 1-e2;
+      const x = mt*mt*sp.x + 2*mt*e2*pp.x + e2*e2*ep.x;
+      const y = mt*mt*sp.y + 2*mt*e2*pp.y + e2*e2*ep.y;
+      const z = mt*mt*sp.z + 2*mt*e2*pp.z + e2*e2*ep.z;
       ball.setAttribute('position', `${x.toFixed(3)} ${y.toFixed(3)} ${z.toFixed(3)}`);
-      const spin = e2 * 720;
-      ball.setAttribute('rotation', `${spin} ${(spin * 0.3).toFixed(1)} 0`);
-
-      const sScale = Math.max(0.15, 1 - y * 0.85);
+      const spin = e2*720;
+      ball.setAttribute('rotation', `${spin} ${(spin*0.3).toFixed(1)} 0`);
+      const ss = Math.max(0.15, 1-y*0.85);
       shadow.setAttribute('position', `${x.toFixed(3)} 0.005 ${z.toFixed(3)}`);
-      shadow.setAttribute('scale', `${sScale} ${sScale} 1`);
-
-      if (t < 1) {
-        requestAnimationFrame(animate);
-      } else {
-        onLanded(isGoal);
-      }
+      shadow.setAttribute('scale', `${ss} ${ss} 1`);
+      t < 1 ? requestAnimationFrame(animate) : onLanded(isGoal);
     }
     requestAnimationFrame(animate);
   }
@@ -333,6 +390,9 @@
     if (isGoal) {
       score++;
       scoreEl.textContent = score;
+      scoreEl.classList.remove('score-pop');
+      void scoreEl.offsetWidth;
+      scoreEl.classList.add('score-pop');
       showFlash(goalFlash, 'flashIn', 1800);
     } else {
       showFlash(missFlash, 'missIn', 1100);
@@ -348,7 +408,7 @@
   }
 
   function showFlash(el, animName, ms) {
-    el.style.display   = 'flex';
+    el.style.display = 'flex';
     el.style.animation = 'none';
     void el.offsetWidth;
     el.style.animation = `${animName} ${ms}ms ease forwards`;
