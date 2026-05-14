@@ -2,48 +2,71 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
   <title>Hiro Marker</title>
-
   <style>
-    body {
-      margin: 0;
-      background: #111;
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      background: #000;
       display: flex;
+      flex-direction: column;
       justify-content: center;
       align-items: center;
-      height: 100vh;
-      flex-direction: column;
-      color: white;
+      overflow: hidden;
       font-family: Arial, sans-serif;
+      color: #fff;
+    }
+
+    .marker-wrap {
+      /* White padding around the marker is critical for AR tracking */
+      background: #fff;
+      padding: 24px;
+      border-radius: 4px;
+      /* Make it as big as the screen allows while keeping a square */
+      width: min(80vw, 80vh);
+      height: min(80vw, 80vh);
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     img {
-      width: 80vmin;
-      max-width: 500px;
-      background: white;
-      padding: 10px;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
     }
 
     p {
       margin-top: 20px;
       text-align: center;
       padding: 0 20px;
+      font-size: clamp(12px, 3vw, 16px);
+      color: #ccc;
+    }
+
+    /* Hide browser UI hint */
+    .fullscreen-hint {
+      margin-top: 10px;
+      font-size: 11px;
+      color: #555;
     }
   </style>
 </head>
-
 <body>
 
-<img
-  src="https://jeromeetienne.github.io/AR.js/data/images/HIRO.jpg"
-  alt="Hiro Marker"
->
+  <div class="marker-wrap">
+    <img
+      src="https://jeromeetienne.github.io/AR.js/data/images/HIRO.jpg"
+      alt="Hiro AR Marker"
+    />
+  </div>
 
-<p>
-  Show this marker to the camera using another device or printed paper.
-</p>
+  <p>Show this marker to the camera using another device or printed paper.</p>
+  <p class="fullscreen-hint">Tip: go fullscreen (F11) to hide browser chrome</p>
 
 </body>
 </html>
