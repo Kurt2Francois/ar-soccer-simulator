@@ -15,85 +15,93 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     html, body {
-      width: 100%;
-      height: 100%;
+      width: 100vw;
+      height: 100vh;
       overflow: hidden;
+      background: #000;
       font-family: Arial, sans-serif;
       touch-action: none;
-      background: #000;
     }
 
-    /* Force the A-Frame canvas + video to fill the full phone screen */
-    a-scene, canvas.a-canvas {
+    /* Force everything AR.js injects to fill the screen */
+    a-scene,
+    .a-canvas,
+    canvas {
       position: fixed !important;
-      top: 0 !important;
-      left: 0 !important;
+      top: 0 !important; left: 0 !important;
       width: 100vw !important;
       height: 100vh !important;
     }
 
-    /* AR.js puts the camera feed in a <video> — make it cover the screen */
     video {
       position: fixed !important;
-      top: 0 !important;
-      left: 0 !important;
-      width: 100vw !important;
-      height: 100vh !important;
+      top: 50% !important;
+      left: 50% !important;
+      transform: translate(-50%, -50%) !important;
+      min-width: 100vw !important;
+      min-height: 100vh !important;
+      width: auto !important;
+      height: auto !important;
       object-fit: cover !important;
-      z-index: 0 !important;
+      z-index: -1 !important;
     }
 
+    /* ── Score — top-right pill ── */
+    #score-board {
+      position: fixed;
+      top: max(14px, env(safe-area-inset-top, 14px));
+      right: 16px;
+      z-index: 999;
+      background: rgba(0, 0, 0, 0.65);
+      color: #fff;
+      padding: 8px 18px;
+      border-radius: 99px;
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* ── Status pill — top-left ── */
     #ui {
       position: fixed;
-      top: max(12px, env(safe-area-inset-top));
-      left: 50%;
-      transform: translateX(-50%);
+      top: max(14px, env(safe-area-inset-top, 14px));
+      left: 16px;
       z-index: 999;
-      background: rgba(0,0,0,0.75);
-      color: white;
-      padding: 10px 20px;
-      border-radius: 20px;
-      font-size: 14px;
+      background: rgba(0, 0, 0, 0.65);
+      color: #fff;
+      padding: 8px 14px;
+      border-radius: 99px;
+      font-size: 13px;
       pointer-events: none;
       white-space: nowrap;
     }
 
-    #score-board {
-      position: fixed;
-      top: calc(max(12px, env(safe-area-inset-top)) + 48px);
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 999;
-      background: rgba(0,100,0,0.85);
-      color: white;
-      padding: 8px 24px;
-      border-radius: 16px;
-      font-size: 18px;
-      font-weight: bold;
-      display: none;
-      text-align: center;
-    }
-
+    /* ── Swipe hint — bottom centre ── */
     #swipe-hint {
       position: fixed;
-      bottom: max(36px, env(safe-area-inset-bottom));
+      bottom: max(32px, env(safe-area-inset-bottom, 32px));
       left: 50%;
       transform: translateX(-50%);
       z-index: 999;
-      color: rgba(255,255,255,0.9);
-      font-size: 16px;
-      font-weight: bold;
+      color: rgba(255,255,255,0.92);
+      font-size: 17px;
+      font-weight: 700;
       text-align: center;
       display: none;
       pointer-events: none;
-      text-shadow: 0 2px 8px rgba(0,0,0,0.9);
-      animation: bounce 1.4s infinite;
+      text-shadow: 0 2px 10px rgba(0,0,0,1);
+      animation: bounce 1.4s ease-in-out infinite;
     }
     @keyframes bounce {
       0%,100% { transform: translateX(-50%) translateY(0); }
-      50%      { transform: translateX(-50%) translateY(-8px); }
+      50%      { transform: translateX(-50%) translateY(-9px); }
     }
 
+    /* ── Trail canvas ── */
     #trail-canvas {
       position: fixed;
       inset: 0;
@@ -101,6 +109,15 @@
       pointer-events: none;
     }
 
+    /* ── Score bump animation ── */
+    @keyframes scorePop {
+      0%   { transform: scale(1); }
+      40%  { transform: scale(1.45); color: #ffe600; }
+      100% { transform: scale(1); color: #fff; }
+    }
+    .score-pop { animation: scorePop 0.45s ease forwards; }
+
+    /* ── Goal flash ── */
     #goal-flash {
       position: fixed;
       inset: 0;
@@ -108,20 +125,21 @@
       display: none;
       justify-content: center;
       align-items: center;
-      font-size: 72px;
+      font-size: 80px;
       font-weight: 900;
       color: gold;
-      text-shadow: 0 0 40px orange, 0 0 80px red;
-      background: rgba(0,0,0,0.35);
+      text-shadow: 0 0 40px orange, 0 0 90px red;
+      background: rgba(0,0,0,0.3);
       pointer-events: none;
     }
     @keyframes flashIn {
-      0%   { opacity: 0; transform: scale(0.5); }
-      30%  { opacity: 1; transform: scale(1.15); }
-      70%  { opacity: 1; transform: scale(1.0); }
-      100% { opacity: 0; transform: scale(1.2); }
+      0%   { opacity: 0; transform: scale(0.4); }
+      30%  { opacity: 1; transform: scale(1.2); }
+      65%  { opacity: 1; transform: scale(1.0); }
+      100% { opacity: 0; transform: scale(1.1); }
     }
 
+    /* ── Miss flash ── */
     #miss-flash {
       position: fixed;
       inset: 0;
@@ -129,11 +147,11 @@
       display: none;
       justify-content: center;
       align-items: center;
-      font-size: 52px;
+      font-size: 54px;
       font-weight: 900;
-      color: #ff4444;
-      text-shadow: 0 0 20px red;
-      background: rgba(0,0,0,0.2);
+      color: #ff3333;
+      text-shadow: 0 0 24px red;
+      background: rgba(0,0,0,0.18);
       pointer-events: none;
     }
     @keyframes missIn {
@@ -148,18 +166,22 @@
 <body>
 
 <canvas id="trail-canvas"></canvas>
-<div id="ui">📷 Point camera at Hiro marker</div>
-<div id="score-board">⚽ Goals: <span id="score">0</span></div>
+
+<div id="ui">📷 Find the Hiro marker</div>
+
+<div id="score-board">
+  ⚽ <span id="score">0</span>
+</div>
+
 <div id="swipe-hint">👆 Swipe UP to kick!</div>
-<div id="goal-flash">⚽ GOAL! 🎉</div>
-<div id="miss-flash">😬 Miss!</div>
+<div id="goal-flash">GOAL! 🎉</div>
+<div id="miss-flash">Miss! 😬</div>
 
 <a-scene
   embedded
   vr-mode-ui="enabled: false"
   renderer="antialias: true; alpha: true; logarithmicDepthBuffer: true;"
   arjs="sourceType: webcam; debugUIEnabled: false; trackingMethod: best;"
-  style="position:fixed;top:0;left:0;width:100vw;height:100vh;"
 >
   <a-marker preset="hiro" id="hiro-marker">
 
@@ -201,17 +223,49 @@
 
   </a-marker>
 
-  <!-- wider FOV suits phone portrait mode -->
   <a-entity camera fov="80" look-controls="enabled: false"></a-entity>
 </a-scene>
 
 <script>
+  // ── Fix video/canvas sizing every time AR.js resizes them ──────────────
+  function forceFullscreen() {
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+
+    // Fix all canvases
+    document.querySelectorAll('canvas').forEach(c => {
+      if (c.id === 'trail-canvas') return;
+      c.style.cssText = `position:fixed!important;top:0!important;left:0!important;width:${vw}px!important;height:${vh}px!important;`;
+    });
+
+    // Fix video: centre + cover
+    document.querySelectorAll('video').forEach(v => {
+      v.style.cssText = `
+        position:fixed!important;
+        top:50%!important; left:50%!important;
+        transform:translate(-50%,-50%)!important;
+        min-width:${vw}px!important;
+        min-height:${vh}px!important;
+        width:auto!important; height:auto!important;
+        object-fit:cover!important;
+        z-index:-1!important;
+      `;
+    });
+  }
+
+  // Run immediately and watch for DOM additions (AR.js adds video async)
+  forceFullscreen();
+  window.addEventListener('resize', forceFullscreen);
+
+  const observer = new MutationObserver(forceFullscreen);
+  observer.observe(document.body, { childList: true, subtree: true, attributes: true });
+
+  // ── Game state ─────────────────────────────────────────
   let score = 0;
   let ballInFlight = false;
   let markerVisible = false;
 
   const ui         = document.getElementById('ui');
-  const scoreBoard = document.getElementById('score-board');
   const scoreEl    = document.getElementById('score');
   const goalFlash  = document.getElementById('goal-flash');
   const missFlash  = document.getElementById('miss-flash');
@@ -220,67 +274,63 @@
   const shadow     = document.getElementById('ball-shadow');
   const marker     = document.getElementById('hiro-marker');
 
-  // ── Marker ────────────────────────────────────────────
+  // ── Marker events ──────────────────────────────────────
   marker.addEventListener('markerFound', () => {
     markerVisible = true;
-    ui.textContent = '✅ Swipe UP anywhere to kick!';
+    ui.textContent = '✅ Swipe UP to kick!';
     swipeHint.style.display = 'block';
-    scoreBoard.style.display = 'block';
   });
   marker.addEventListener('markerLost', () => {
     markerVisible = false;
-    ui.textContent = '📷 Point camera at Hiro marker';
+    ui.textContent = '📷 Find the Hiro marker';
     swipeHint.style.display = 'none';
   });
 
-  // ── Trail canvas ──────────────────────────────────────
-  const canvas = document.getElementById('trail-canvas');
-  const ctx    = canvas.getContext('2d');
-
-  function resizeCanvas() {
-    canvas.width  = window.innerWidth;
-    canvas.height = window.innerHeight;
-  }
-  resizeCanvas();
-  window.addEventListener('resize', resizeCanvas);
-
+  // ── Trail canvas ───────────────────────────────────────
+  const trailCanvas = document.getElementById('trail-canvas');
+  const ctx = trailCanvas.getContext('2d');
   let trailPoints = [];
 
+  function resizeTrail() {
+    trailCanvas.width  = window.innerWidth;
+    trailCanvas.height = window.innerHeight;
+  }
+  resizeTrail();
+  window.addEventListener('resize', resizeTrail);
+
   function drawTrail() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0, 0, trailCanvas.width, trailCanvas.height);
     if (trailPoints.length < 2) return;
     ctx.beginPath();
     ctx.moveTo(trailPoints[0].x, trailPoints[0].y);
-    for (let i = 1; i < trailPoints.length; i++) {
-      ctx.lineTo(trailPoints[i].x, trailPoints[i].y);
-    }
-    ctx.strokeStyle = 'rgba(255, 200, 0, 0.75)';
-    ctx.lineWidth   = 7;
-    ctx.lineCap     = 'round';
-    ctx.lineJoin    = 'round';
+    for (let i = 1; i < trailPoints.length; i++) ctx.lineTo(trailPoints[i].x, trailPoints[i].y);
+    ctx.strokeStyle = 'rgba(255,210,0,0.8)';
+    ctx.lineWidth = 7;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
     ctx.stroke();
   }
 
   function clearTrail() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0, 0, trailCanvas.width, trailCanvas.height);
     trailPoints = [];
   }
 
-  // ── Touch ─────────────────────────────────────────────
+  // ── Touch / swipe ──────────────────────────────────────
   let touchStartX = 0, touchStartY = 0;
   let touchLastX  = 0, touchLastY  = 0;
   let isSwiping   = false;
 
-  document.addEventListener('touchstart', (e) => {
+  document.addEventListener('touchstart', e => {
     if (!markerVisible || ballInFlight) return;
     const t = e.touches[0];
     touchStartX = touchLastX = t.clientX;
     touchStartY = touchLastY = t.clientY;
-    isSwiping   = true;
+    isSwiping = true;
     trailPoints = [{ x: t.clientX, y: t.clientY }];
   }, { passive: true });
 
-  document.addEventListener('touchmove', (e) => {
+  document.addEventListener('touchmove', e => {
     if (!isSwiping) return;
     const t = e.touches[0];
     touchLastX = t.clientX;
@@ -291,73 +341,58 @@
 
   document.addEventListener('touchend', () => {
     if (!isSwiping || !markerVisible || ballInFlight) {
-      isSwiping = false;
-      clearTrail();
-      return;
+      isSwiping = false; clearTrail(); return;
     }
     isSwiping = false;
 
     const dx = touchLastX - touchStartX;
-    const dy = touchLastY - touchStartY; // negative = upward swipe
-
-    const swipeDist = Math.sqrt(dx * dx + dy * dy);
-    const isUpward  = dy < -40;
+    const dy = touchLastY - touchStartY;
+    const dist = Math.sqrt(dx*dx + dy*dy);
+    const isUp = dy < -40;
 
     setTimeout(clearTrail, 250);
+    if (dist < 40 || !isUp) return;
 
-    if (swipeDist < 40 || !isUpward) return; // ignored: too short or not upward
-
-    // Horizontal aim: where on screen the swipe started
-    const screenW  = window.innerWidth;
-    const centerX  = screenW / 2;
-    const offsetX  = touchStartX - centerX;             // px from center
-    const xDrift   = (offsetX / (screenW * 0.42)) * 0.75; // normalise → ±0.75
-
-    // Power from swipe length, capped at 1
-    const power = Math.min(swipeDist / 280, 1.0);
-
+    const screenW = window.innerWidth;
+    const xDrift  = ((touchStartX - screenW / 2) / (screenW * 0.42)) * 0.75;
+    const power   = Math.min(dist / 280, 1.0);
     kickBall(xDrift, power);
   }, { passive: true });
 
-  // ── Kick ─────────────────────────────────────────────
+  // ── Kick animation ─────────────────────────────────────
   function kickBall(xDrift, power) {
     if (ballInFlight) return;
     ballInFlight = true;
     swipeHint.style.display = 'none';
 
-    // Goal posts sit at x ±0.75 world units
     const worldX = xDrift * 1.1;
-    const isGoal  = Math.abs(worldX) < 0.70 && power > 0.18;
+    const isGoal = Math.abs(worldX) < 0.70 && power > 0.18;
 
-    const startPos = { x: 0,             y: 0.18,                z:  0.5 };
-    const peakPos  = { x: worldX * 0.45, y: 0.5 + power * 0.75, z: -0.6 };
-    const endPos   = { x: worldX,        y: isGoal ? 0.42 : 0.05, z: -2.3 };
+    const sp = { x: 0,            y: 0.18,               z:  0.5  };
+    const pp = { x: worldX*0.45,  y: 0.5 + power*0.75,   z: -0.6  };
+    const ep = { x: worldX,       y: isGoal ? 0.42 : 0.05, z: -2.3 };
 
-    const duration  = 700 + power * 250;
-    const startTime = performance.now();
+    const dur = 700 + power * 250;
+    const t0  = performance.now();
 
     function animate(now) {
-      const t  = Math.min((now - startTime) / duration, 1);
-      const e2 = t < 0.5 ? 2*t*t : -1 + (4 - 2*t)*t; // ease in-out quad
+      const t  = Math.min((now - t0) / dur, 1);
+      const e2 = t < 0.5 ? 2*t*t : -1 + (4 - 2*t)*t;
       const mt = 1 - e2;
 
-      const x = mt*mt*startPos.x + 2*mt*e2*peakPos.x + e2*e2*endPos.x;
-      const y = mt*mt*startPos.y + 2*mt*e2*peakPos.y + e2*e2*endPos.y;
-      const z = mt*mt*startPos.z + 2*mt*e2*peakPos.z + e2*e2*endPos.z;
+      const x = mt*mt*sp.x + 2*mt*e2*pp.x + e2*e2*ep.x;
+      const y = mt*mt*sp.y + 2*mt*e2*pp.y + e2*e2*ep.y;
+      const z = mt*mt*sp.z + 2*mt*e2*pp.z + e2*e2*ep.z;
 
       ball.setAttribute('position', `${x.toFixed(3)} ${y.toFixed(3)} ${z.toFixed(3)}`);
       const spin = e2 * 720;
-      ball.setAttribute('rotation', `${spin} ${(spin * 0.3).toFixed(1)} 0`);
+      ball.setAttribute('rotation', `${spin} ${(spin*0.3).toFixed(1)} 0`);
 
-      const sScale = Math.max(0.15, 1 - y * 0.85);
+      const ss = Math.max(0.15, 1 - y * 0.85);
       shadow.setAttribute('position', `${x.toFixed(3)} 0.005 ${z.toFixed(3)}`);
-      shadow.setAttribute('scale', `${sScale} ${sScale} 1`);
+      shadow.setAttribute('scale', `${ss} ${ss} 1`);
 
-      if (t < 1) {
-        requestAnimationFrame(animate);
-      } else {
-        onLanded(isGoal);
-      }
+      t < 1 ? requestAnimationFrame(animate) : onLanded(isGoal);
     }
     requestAnimationFrame(animate);
   }
@@ -366,10 +401,15 @@
     if (isGoal) {
       score++;
       scoreEl.textContent = score;
+      // Animate the score number
+      scoreEl.classList.remove('score-pop');
+      void scoreEl.offsetWidth;
+      scoreEl.classList.add('score-pop');
       showFlash(goalFlash, 'flashIn', 1800);
     } else {
       showFlash(missFlash, 'missIn', 1100);
     }
+
     setTimeout(() => {
       ball.setAttribute('position', '0 0.18 0.5');
       ball.setAttribute('rotation', '0 0 0');
@@ -381,7 +421,7 @@
   }
 
   function showFlash(el, animName, ms) {
-    el.style.display   = 'flex';
+    el.style.display = 'flex';
     el.style.animation = 'none';
     void el.offsetWidth;
     el.style.animation = `${animName} ${ms}ms ease forwards`;
