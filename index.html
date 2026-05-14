@@ -37,7 +37,7 @@
       position: fixed !important;
       top: 50% !important;
       left: 50% !important;
-      transform: translate(-50%, -50%) !important;
+      transform: translate(-50%, -50%) scale(0.55) !important;
       min-width: 100vw !important;
       min-height: 100vh !important;
       width: auto !important;
@@ -181,7 +181,7 @@
   embedded
   vr-mode-ui="enabled: false"
   renderer="antialias: true; alpha: true; logarithmicDepthBuffer: true;"
-  arjs="sourceType: webcam; debugUIEnabled: false; trackingMethod: best;"
+  arjs="sourceType: webcam; debugUIEnabled: false; trackingMethod: best; sourceWidth: 480; sourceHeight: 640; displayWidth: 480; displayHeight: 640;"
 >
   <a-marker preset="hiro" id="hiro-marker">
 
@@ -223,7 +223,7 @@
 
   </a-marker>
 
-  <a-entity camera fov="80" look-controls="enabled: false"></a-entity>
+  <a-entity camera fov="140" look-controls="enabled: false"></a-entity>
 </a-scene>
 
 <script>
@@ -238,12 +238,12 @@
       c.style.cssText = `position:fixed!important;top:0!important;left:0!important;width:${vw}px!important;height:${vh}px!important;`;
     });
 
-    // Fix video: centre + cover
+    // Fix video: centre + cover + scale down to zoom out
     document.querySelectorAll('video').forEach(v => {
       v.style.cssText = `
         position:fixed!important;
         top:50%!important; left:50%!important;
-        transform:translate(-50%,-50%)!important;
+        transform:translate(-50%,-50%) scale(0.55)!important;
         min-width:${vw}px!important;
         min-height:${vh}px!important;
         width:auto!important; height:auto!important;
