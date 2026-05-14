@@ -1,0 +1,301 @@
+# Complete Simple AR Soccer Simulator Project
+
+Project folder:
+
+```text
+ar-soccer-simulator/
+│
+├── index.html
+├── marker-display.html
+├── vercel.json
+└── package.json
+```
+
+---
+
+# 1. index.html
+
+Create `index.html`
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+  />
+
+  <title>AR Soccer Simulator</title>
+
+  <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/aframe/build/aframe-ar.min.js"></script>
+
+  <style>
+    html,
+    body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: black;
+      font-family: Arial, sans-serif;
+    }
+
+    #status {
+      position: fixed;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 999;
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 12px 18px;
+      border-radius: 10px;
+      width: 85%;
+      max-width: 420px;
+      text-align: center;
+      font-size: 15px;
+    }
+
+    #hud {
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+      z-index: 999;
+      text-align: center;
+      color: white;
+      padding: 18px;
+      background: linear-gradient(transparent, rgba(0,0,0,0.9));
+    }
+
+    #hud button {
+      padding: 12px 20px;
+      border: none;
+      border-radius: 10px;
+      background: #188c42;
+      color: white;
+      font-size: 16px;
+      margin-top: 10px;
+      cursor: pointer;
+    }
+
+    #hud button:hover {
+      opacity: 0.9;
+    }
+
+    video {
+      object-fit: cover !important;
+    }
+  </style>
+</head>
+
+<body>
+
+<div id="status">
+  Starting camera...
+</div>
+
+<div id="hud">
+  <h2>AR Soccer Simulator</h2>
+
+  <div>
+    Goals: <span id="score">0</span>
+  </div>
+
+  <button onclick="resetBall()">
+    Reset Ball
+  </button>
+</div>
+
+<a-scene
+  embedded
+  vr-mode-ui="enabled: false"
+  renderer="antialias: true; alpha: true"
+  arjs="
+    sourceType: webcam;
+    debugUIEnabled: false;
+    trackingMethod: best;
+    detectionMode: mono;
+    videoTexture: true;
+  "
+>
+
+  <a-marker
+    preset="hiro"
+    id="marker"
+    emitevents="true"
+  >
+
+    <!-- FIELD -->
+    <a-plane
+      position="0 0 0"
+      rotation="-90 0 0"
+      width="1.6"
+      height="1"
+      color="#2d8f47"
+    ></a-plane>
+
+    <!-- GOAL -->
+    <a-box
+      position="0 0.15 -0.45"
+      width="0.45"
+      height="0.3"
+      depth="0.03"
+      color="white"
+      opacity="0.35"
+    ></a-box>
+
+    <!-- BALL -->
+    <a-sphere
+      id="ball"
+      position="0 0.05 0.3"
+      radius="0.05"
+      color="white"
+    ></a-sphere>
+
+  </a-marker>
+
+  <a-entity camera></a-entity>
+
+</a-scene>
+
+<script>
+let score = 0;
+let moving = false;
+
+const marker = document.querySelector("#marker");
+const ball = document.querySelector("#ball");
+const scoreText = document.querySelector("#score");
+const statusText = document.querySelector("#status");
+
+marker.addEventListener("markerFound", () => {
+  statusText.innerHTML = "Marker detected! Tap screen to shoot.";
+  statusText.style.background = "rgba(0,120,0,0.85)";
+});
+
+marker.addEventListener("markerLost", () => {
+  statusText.innerHTML = "Searching for Hiro marker...";
+  statusText.style.background = "rgba(0,0,0,0.85)";
+});
+
+function resetBall() {
+  moving = false;
+
+  ball.setAttribute("position", {
+    x: 0,
+    y: 0.05,
+    z: 0.3
+  });
+}
+
+function shootBall() {
+  if (moving) return;
+
+  if (!marker.object3D.visible) return;
+
+  moving = true;
+
+  let pos = ball.getAttribute("position");
+
+  const interval = setInterval(() => {
+    pos.z -= 0.03;
+
+    ball.setAttribute("position", pos);
+
+    if (pos.z <= -0.4) {
+      clearInterval(interval);
+
+      score++;
+      scoreText.innerText = score;
+
+      setTimeout(resetBall, 700);
+    }
+  }, 16);
+}
+
+window.addEventListener("click", shootBall);
+window.addEventListener("touchstart", shootBall);
+
+window.addEventListener("load", async () => {
+  try {
+    await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: {
+          ideal: "environment"
+        }
+      },
+      audio: false
+    });
+
+    statusText.innerHTML = "Searching for Hiro marker...";
+  }
+  catch (e) {
+    console.error(e);
+
+    statusText.innerHTML = "Camera permission denied.";
+  }
+});
+</script>
+
+</body>
+</html>
+```
+
+---
+
+# 2. marker-display.html
+
+Create `marker-display.html`
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Hiro Marker</title>
+
+  <style>
+    body {
+      margin: 0;
+      background: #111;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      flex-direction: column;
+      color: white;
+      font-family: Arial, sans-serif;
+    }
+
+    img {
+      width: 80vmin;
+      max-width: 500px;
+      background: white;
+      padding: 10px;
+    }
+
+    p {
+      margin-top: 20px;
+      text-align: center;
+      padding: 0 20px;
+    }
+  </style>
+</head>
+
+<body>
+
+<img
+  src="https://jeromeetienne.github.io/AR.js/data/images/HIRO.jpg"
+  alt="Hiro Marker"
+>
+
+<p>
+  Show this marker to the camera using another device or printed paper.
+</p>
+
+</body>
+</html>

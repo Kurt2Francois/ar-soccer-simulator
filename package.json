@@ -1,0 +1,12 @@
+{
+    "name": "ar-soccer-simulator",
+    "version": "1.0.0",
+    "description": "Simple AR Soccer Simulator",
+    "main": "index.html",
+    "scripts": {
+      "start": "serve ."
+    },
+    "dependencies": {
+      "serve": "^14.2.1"
+    }
+  }
