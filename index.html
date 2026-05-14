@@ -22,36 +22,53 @@
       touch-action: none;
     }
 
-    /* Make AR.js canvas fill screen */
-    a-scene {
-      position: fixed !important;
-      top: 0 !important; left: 0 !important;
-      width: 100% !important; height: 100% !important;
-    }
+    /* ── CRITICAL: Force EVERYTHING AR.js injects to fill the screen ── */
 
-    /* The injected canvas */
-    canvas.a-canvas {
+    /* The a-scene wrapper */
+    a-scene,
+    a-scene canvas,
+    .a-canvas {
       position: fixed !important;
-      top: 0 !important; left: 0 !important;
+      top: 0 !important;
+      left: 0 !important;
       width: 100vw !important;
       height: 100vh !important;
+      z-index: 1 !important;
     }
 
-    /* AR.js injects a <video> and an arjs-video div — cover both */
-    video,
-    #arjs-video {
+    /*
+      AR.js creates a <video> AND wraps it in a <div> with inline width/height
+      styles based on camera resolution. We must override ALL of them.
+      object-fit:cover ensures it fills the viewport without stretching.
+    */
+    video {
       position: fixed !important;
-      top: 0 !important; left: 0 !important;
+      top: 0 !important;
+      left: 0 !important;
       width: 100vw !important;
       height: 100vh !important;
+      min-width: 100vw !important;
+      min-height: 100vh !important;
+      max-width: 100vw !important;
+      max-height: 100vh !important;
       object-fit: cover !important;
       z-index: 0 !important;
       transform: none !important;
-      max-width: none !important;
-      max-height: none !important;
     }
 
-    /* UI on top */
+    /* AR.js wraps the video in a div — nuke its inline sizing too */
+    body > div:not(#ui):not(#score-board):not(#swipe-hint):not(#goal-flash):not(#miss-flash) {
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      max-width: 100vw !important;
+      max-height: 100vh !important;
+      overflow: hidden !important;
+    }
+
+    /* ── UI overlays ── */
     #ui {
       position: fixed;
       top: 14px;
@@ -102,6 +119,8 @@
     #trail-canvas {
       position: fixed;
       inset: 0;
+      width: 100vw !important;
+      height: 100vh !important;
       z-index: 998;
       pointer-events: none;
     }
@@ -195,50 +214,76 @@
 </a-scene>
 
 <script>
-  // ── Aggressively fix video + canvas sizing ─────────────────────────────
-  function fixLayout() {
-    const W = window.innerWidth, H = window.innerHeight;
+  // ── Aggressively nuke any inline sizing AR.js sets ──────────────────────
+  function forceFullscreen() {
+    const W = window.innerWidth;
+    const H = window.innerHeight;
 
-    // Fix every video AR.js creates
+    // All videos
     document.querySelectorAll('video').forEach(v => {
-      v.style.position   = 'fixed';
-      v.style.top        = '0';
-      v.style.left       = '0';
-      v.style.width      = W + 'px';
-      v.style.height     = H + 'px';
-      v.style.objectFit  = 'cover';
-      v.style.zIndex     = '0';
-      v.style.transform  = 'none';
-      v.style.maxWidth   = 'none';
-      v.style.maxHeight  = 'none';
+      v.style.cssText += [
+        'position:fixed!important',
+        'top:0!important', 'left:0!important',
+        `width:${W}px!important`, `height:${H}px!important`,
+        'min-width:100vw!important', 'min-height:100vh!important',
+        'max-width:none!important', 'max-height:none!important',
+        'object-fit:cover!important',
+        'z-index:0!important',
+        'transform:none!important',
+      ].join(';');
       v.setAttribute('playsinline', '');
       v.setAttribute('webkit-playsinline', '');
     });
 
-    // Fix AR.js wrapper divs
-    document.querySelectorAll('#arjs-video, .arjs-loader').forEach(el => {
-      el.style.position = 'fixed';
-      el.style.top = '0'; el.style.left = '0';
-      el.style.width = W + 'px'; el.style.height = H + 'px';
-      el.style.zIndex = '0';
+    // Any wrapper div AR.js creates (it gives them inline width/height)
+    document.querySelectorAll('body > div').forEach(el => {
+      if (['ui','score-board','swipe-hint','goal-flash','miss-flash'].includes(el.id)) return;
+      el.style.cssText += [
+        'position:fixed!important',
+        'top:0!important', 'left:0!important',
+        `width:${W}px!important`, `height:${H}px!important`,
+        'max-width:none!important', 'max-height:none!important',
+        'overflow:hidden!important',
+      ].join(';');
     });
 
-    // Fix WebGL canvas
+    // WebGL canvas
     document.querySelectorAll('canvas').forEach(c => {
       if (c.id === 'trail-canvas') return;
-      c.style.position = 'fixed';
-      c.style.top = '0'; c.style.left = '0';
-      c.style.width = W + 'px'; c.style.height = H + 'px';
-      c.style.zIndex = '1';
+      c.style.cssText += [
+        'position:fixed!important',
+        'top:0!important', 'left:0!important',
+        `width:${W}px!important`, `height:${H}px!important`,
+        'z-index:1!important',
+      ].join(';');
     });
+
+    // a-scene itself
+    const scene = document.querySelector('a-scene');
+    if (scene) {
+      scene.style.cssText += [
+        'position:fixed!important',
+        'top:0!important', 'left:0!important',
+        `width:${W}px!important`, `height:${H}px!important`,
+      ].join(';');
+    }
   }
 
-  // Run now, on resize, and watch for any new elements AR.js adds
-  fixLayout();
-  window.addEventListener('resize', fixLayout);
-  window.addEventListener('orientationchange', () => setTimeout(fixLayout, 300));
-  new MutationObserver(fixLayout)
-    .observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['style','width','height'] });
+  // Run immediately and keep running whenever DOM changes
+  forceFullscreen();
+  window.addEventListener('resize', forceFullscreen);
+  window.addEventListener('orientationchange', () => {
+    setTimeout(forceFullscreen, 100);
+    setTimeout(forceFullscreen, 500);
+  });
+
+  // Watch for AR.js injecting new elements / changing inline styles
+  new MutationObserver(forceFullscreen).observe(document.body, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ['style', 'width', 'height']
+  });
 
   // ── Game state ──────────────────────────────────────────────────────────
   let score = 0, ballInFlight = false, markerVisible = false;
@@ -274,6 +319,7 @@
   }
   resizeTrail();
   window.addEventListener('resize', resizeTrail);
+  window.addEventListener('orientationchange', () => setTimeout(resizeTrail, 200));
 
   function drawTrail() {
     ctx.clearRect(0, 0, trailCanvas.width, trailCanvas.height);
@@ -290,7 +336,7 @@
     trailPoints = [];
   }
 
-  // ── Swipe ───────────────────────────────────────────────────────────────
+  // ── Swipe (touch) ───────────────────────────────────────────────────────
   let sx=0, sy=0, lx=0, ly=0, swiping=false;
 
   document.addEventListener('touchstart', e => {
@@ -320,6 +366,32 @@
     const power  = Math.min(dist / 280, 1.0);
     kickBall(xDrift, power);
   }, { passive: true });
+
+  // ── Mouse swipe support (PC) ────────────────────────────────────────────
+  let mDown = false;
+  document.addEventListener('mousedown', e => {
+    if (!markerVisible || ballInFlight) return;
+    sx = lx = e.clientX; sy = ly = e.clientY;
+    mDown = true;
+    trailPoints = [{ x: e.clientX, y: e.clientY }];
+  });
+  document.addEventListener('mousemove', e => {
+    if (!mDown) return;
+    lx = e.clientX; ly = e.clientY;
+    trailPoints.push({ x: lx, y: ly });
+    drawTrail();
+  });
+  document.addEventListener('mouseup', () => {
+    if (!mDown || !markerVisible || ballInFlight) { mDown=false; clearTrail(); return; }
+    mDown = false;
+    const dx = lx - sx, dy = ly - sy;
+    const dist = Math.sqrt(dx*dx + dy*dy);
+    setTimeout(clearTrail, 250);
+    if (dist < 40 || dy > -40) return;
+    const xDrift = ((sx - window.innerWidth/2) / (window.innerWidth * 0.42)) * 0.75;
+    const power  = Math.min(dist / 280, 1.0);
+    kickBall(xDrift, power);
+  });
 
   // ── Kick animation ──────────────────────────────────────────────────────
   function kickBall(xDrift, power) {
