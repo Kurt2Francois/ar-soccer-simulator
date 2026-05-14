@@ -7,11 +7,6 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <title>AR Soccer</title>
 
-  <!--
-    CRITICAL: Use the exact versions from the official AR.js docs.
-    aframe 1.2.0 + AR.js 3.4.5 — this exact pairing avoids the EventDispatcher error.
-    Both loaded from the same CDN (unpkg) synchronously so order is guaranteed.
-  -->
   <script src="https://unpkg.com/aframe@1.2.0/dist/aframe.min.js"></script>
   <script src="https://unpkg.com/@ar-js-org/ar.js@3.4.5/aframe/build/aframe-ar.js"></script>
 
@@ -20,14 +15,12 @@
     html, body { width: 100%; height: 100%; overflow: hidden; background: transparent; color: #fff; font-family: Arial, sans-serif; }
     #ui { position: fixed; top: 16px; left: 16px; z-index: 999; background: rgba(0,0,0,0.7); padding: 10px 14px; border-radius: 18px; font-size: 14px; }
     #score-board { position: fixed; top: 16px; right: 16px; z-index: 999; background: rgba(0,0,0,0.7); padding: 12px 16px; border-radius: 18px; font-size: 18px; font-weight: 700; }
-    #goal-flash { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; z-index: 1000; font-size: 64px; font-weight: 900; color: #ffe600; text-shadow: 0 0 20px #000; background: rgba(0,0,0,0.35); }
   </style>
 </head>
 <body>
 
 <div id="ui">Find the Hiro marker</div>
 <div id="score-board">Score: <span id="score">0</span></div>
-<div id="goal-flash">GOAL! 🎉</div>
 
 <a-scene
   vr-mode-ui="enabled: false"
@@ -36,63 +29,64 @@
   arjs="sourceType: webcam; debugUIEnabled: false;"
 >
   <a-marker preset="hiro" id="hiro-marker">
+    <a-entity scale="0.5 0.5 0.5">
 
-    <!-- Field -->
-    <a-plane position="0 0 0" rotation="-90 0 0" width="4" height="6"
-      material="color:#2d8c2d; opacity:0.65; transparent:true"></a-plane>
-    <a-ring position="0 0.01 0" rotation="-90 0 0"
-      radius-inner="0.45" radius-outer="0.5"
-      material="color:white; opacity:0.55; transparent:true"></a-ring>
+      <!-- Field -->
+      <a-plane position="0 0 0" rotation="-90 0 0" width="2" height="3"
+        material="color:#2d8c2d; opacity:0.75; transparent:true"></a-plane>
 
-    <!-- Goal posts -->
-    <a-cylinder position="-0.75 0.5 -2" radius="0.04" height="1" material="color:white"></a-cylinder>
-    <a-cylinder position=" 0.75 0.5 -2" radius="0.04" height="1" material="color:white"></a-cylinder>
-    <a-box position="0 0.98 -2" width="1.54" height="0.05" depth="0.05" material="color:white"></a-box>
+      <!-- Centre circle -->
+      <a-ring position="0 0.01 0.3" rotation="-90 0 0"
+        radius-inner="0.28" radius-outer="0.32"
+        material="color:white; opacity:0.6; transparent:true"></a-ring>
 
-    <!-- Net -->
-    <a-plane position="0 0.5 -2.08" width="1.5" height="1"
-      material="color:#ccc; opacity:0.22; transparent:true; side:double"></a-plane>
-    <a-box position="0 0.25 -2.08" width="1.5" height="0.01" depth="0.01" material="color:white;opacity:0.4;transparent:true"></a-box>
-    <a-box position="0 0.50 -2.08" width="1.5" height="0.01" depth="0.01" material="color:white;opacity:0.4;transparent:true"></a-box>
-    <a-box position="0 0.75 -2.08" width="1.5" height="0.01" depth="0.01" material="color:white;opacity:0.4;transparent:true"></a-box>
-    <a-box position="-0.5 0.5 -2.08" width="0.01" height="1" depth="0.01" material="color:white;opacity:0.4;transparent:true"></a-box>
-    <a-box position=" 0   0.5 -2.08" width="0.01" height="1" depth="0.01" material="color:white;opacity:0.4;transparent:true"></a-box>
-    <a-box position=" 0.5 0.5 -2.08" width="0.01" height="1" depth="0.01" material="color:white;opacity:0.4;transparent:true"></a-box>
-    <a-box position="0 0.01 -1.5" width="1.5" height="0.01" depth="0.01" material="color:white;opacity:0.5;transparent:true"></a-box>
+      <!-- Halfway line -->
+      <a-box position="0 0.01 0.3" width="2" height="0.01" depth="0.02"
+        material="color:white; opacity:0.5; transparent:true"></a-box>
 
-    <!-- Soccer ball -->
-    <a-sphere id="soccer-ball" position="0 0.18 0.5" radius="0.18"
-      material="color:white; roughness:0.5">
-      <a-icosahedron radius="0.187"
-        material="color:#111; wireframe:true; opacity:0.6; transparent:true"></a-icosahedron>
-    </a-sphere>
-    <a-circle id="ball-shadow" position="0 0.005 0.5" rotation="-90 0 0"
-      radius="0.16" material="color:black; opacity:0.25; transparent:true"></a-circle>
+      <!-- Goal posts -->
+      <a-cylinder position="-0.4 0.25 -1.2" radius="0.03" height="0.5" material="color:white"></a-cylinder>
+      <a-cylinder position=" 0.4 0.25 -1.2" radius="0.03" height="0.5" material="color:white"></a-cylinder>
+      <a-box position="0 0.49 -1.2" width="0.84" height="0.04" depth="0.04" material="color:white"></a-box>
 
+      <!-- Net -->
+      <a-plane position="0 0.25 -1.26" width="0.8" height="0.5"
+        material="color:#ddd; opacity:0.2; transparent:true; side:double"></a-plane>
+      <a-box position="0 0.12 -1.26" width="0.8" height="0.01" depth="0.01" material="color:white;opacity:0.35;transparent:true"></a-box>
+      <a-box position="0 0.25 -1.26" width="0.8" height="0.01" depth="0.01" material="color:white;opacity:0.35;transparent:true"></a-box>
+      <a-box position="0 0.38 -1.26" width="0.8" height="0.01" depth="0.01" material="color:white;opacity:0.35;transparent:true"></a-box>
+      <a-box position="-0.27 0.25 -1.26" width="0.01" height="0.5" depth="0.01" material="color:white;opacity:0.35;transparent:true"></a-box>
+      <a-box position="     0 0.25 -1.26" width="0.01" height="0.5" depth="0.01" material="color:white;opacity:0.35;transparent:true"></a-box>
+      <a-box position=" 0.27 0.25 -1.26" width="0.01" height="0.5" depth="0.01" material="color:white;opacity:0.35;transparent:true"></a-box>
+      <a-box position="0 0.01 -0.95" width="0.8" height="0.01" depth="0.01" material="color:white;opacity:0.5;transparent:true"></a-box>
+
+      <!-- Soccer ball -->
+      <a-sphere id="soccer-ball" position="0 0.12 0.3" radius="0.12"
+        material="color:white; roughness:0.4">
+        <a-icosahedron radius="0.125"
+          material="color:#111; wireframe:true; opacity:0.7; transparent:true"></a-icosahedron>
+      </a-sphere>
+      <a-circle id="ball-shadow" position="0 0.003 0.3" rotation="-90 0 0"
+        radius="0.10" material="color:black; opacity:0.3; transparent:true"></a-circle>
+
+    </a-entity>
   </a-marker>
 
   <a-entity camera look-controls="enabled:false"></a-entity>
 </a-scene>
 
 <script>
-  const ui       = document.getElementById('ui');
-  const scoreEl  = document.getElementById('score');
-  const goalFlash= document.getElementById('goal-flash');
-  const ball     = document.getElementById('soccer-ball');
-  const shadow   = document.getElementById('ball-shadow');
-  const marker   = document.getElementById('hiro-marker');
+  const ui      = document.getElementById('ui');
+  const scoreEl = document.getElementById('score');
+  const ball    = document.getElementById('soccer-ball');
+  const shadow  = document.getElementById('ball-shadow');
+  const marker  = document.getElementById('hiro-marker');
 
   let score = 0, ballInFlight = false, markerVisible = false;
   let swipeActive = false, startX = 0, startY = 0, currentX = 0, currentY = 0;
 
-  marker.addEventListener('markerFound', () => {
-    markerVisible = true;
-    ui.textContent = 'Swipe up to kick ⬆️';
-  });
-  marker.addEventListener('markerLost', () => {
-    markerVisible = false;
-    ui.textContent = 'Find the Hiro marker';
-  });
+  marker.addEventListener('markerFound', () => { markerVisible = true;  ui.textContent = 'Swipe up to kick ⬆️'; });
+  marker.addEventListener('markerLost',  () => { markerVisible = false; ui.textContent = 'Find the Hiro marker'; });
 
   function beginSwipe(x, y) {
     if (!markerVisible || ballInFlight) return;
@@ -118,11 +112,11 @@
   function kickBall(xDrift, power) {
     ballInFlight = true;
     ui.textContent = 'Kicked…';
-    const worldX = xDrift * 1.1;
-    const isGoal = Math.abs(worldX) < 0.70 && power > 0.18;
-    const s = { x: 0, y: 0.18, z: 0.5 };
-    const p = { x: worldX * 0.45, y: 0.5 + power * 0.75, z: -0.6 };
-    const e = { x: worldX, y: isGoal ? 0.42 : 0.05, z: -2.3 };
+    const worldX = xDrift * 0.6;
+    const isGoal = Math.abs(worldX) < 0.38 && power > 0.18;
+    const s = { x: 0,            y: 0.12, z:  0.30 };
+    const p = { x: worldX * 0.4, y: 0.35 + power * 0.4, z: -0.4 };
+    const e = { x: worldX,       y: isGoal ? 0.22 : 0.03, z: -1.4 };
     const dur = 700 + power * 250, t0 = performance.now();
 
     function animate(now) {
@@ -135,7 +129,7 @@
       ball.setAttribute('position', `${x.toFixed(3)} ${y.toFixed(3)} ${z.toFixed(3)}`);
       ball.setAttribute('rotation', `${(ea*720).toFixed(1)} ${(ea*216).toFixed(1)} 0`);
       const ss = Math.max(0.15, 1 - y * 0.85);
-      shadow.setAttribute('position', `${x.toFixed(3)} 0.005 ${z.toFixed(3)}`);
+      shadow.setAttribute('position', `${x.toFixed(3)} 0.003 ${z.toFixed(3)}`);
       shadow.setAttribute('scale', `${ss} ${ss} 1`);
       if (t < 1) requestAnimationFrame(animate); else onLanding(isGoal);
     }
@@ -146,16 +140,14 @@
     if (isGoal) {
       score++;
       scoreEl.textContent = score;
-      ui.textContent = 'GOAL! 🎉';
-      goalFlash.style.display = 'flex';
-      setTimeout(() => goalFlash.style.display = 'none', 900);
+      ui.textContent = 'Swipe up to kick ⬆️';
     } else {
       ui.textContent = 'Miss!';
     }
     setTimeout(() => {
-      ball.setAttribute('position', '0 0.18 0.5');
+      ball.setAttribute('position', '0 0.12 0.3');
       ball.setAttribute('rotation', '0 0 0');
-      shadow.setAttribute('position', '0 0.005 0.5');
+      shadow.setAttribute('position', '0 0.003 0.3');
       shadow.setAttribute('scale', '1 1 1');
       ballInFlight = false;
       if (markerVisible) ui.textContent = 'Swipe up to kick ⬆️';
